@@ -1,48 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="600" height="800" viewBox="0 0 600 800" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Tło urządzenia -->
-  <rect width="600" height="800" rx="40" fill="#1A1A1A"/>
+<svg width="600" height="400" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Laptop base -->
+  <path d="M50 320H550L580 380H20L50 320Z" fill="url(#laptop-gradient)"/>
   
-  <!-- Ekran -->
-  <rect x="20" y="20" width="560" height="760" rx="32" fill="#0B0A0C"/>
+  <!-- Laptop screen frame -->
+  <path d="M100 40C100 28.9543 108.954 20 120 20H480C491.046 20 500 28.9543 500 40V320H100V40Z" fill="url(#laptop-gradient)"/>
   
-  <!-- Nagłówek -->
-  <rect x="40" y="40" width="520" height="80" rx="16" fill="#1E1E1E"/>
-  <circle cx="80" cy="80" r="20" fill="#FF0080"/>
-  <rect x="120" y="70" width="120" height="20" rx="4" fill="#FFFFFF"/>
+  <!-- Screen content -->
+  <rect x="120" y="40" width="360" height="260" fill="#1A1A1A"/>
   
-  <!-- Saldo -->
-  <rect x="40" y="140" width="520" height="120" rx="16" fill="#1E1E1E"/>
-  <rect x="60" y="160" width="200" height="30" rx="4" fill="#FF0080"/>
-  <rect x="60" y="200" width="300" height="40" rx="4" fill="#FFFFFF"/>
+  <!-- WordPress header -->
+  <rect x="120" y="40" width="360" height="60" fill="#111111"/>
+  <circle cx="150" cy="70" r="15" fill="#FF007A"/>
+  <rect x="280" y="60" width="40" height="20" rx="4" fill="#333333"/>
+  <rect x="340" y="60" width="40" height="20" rx="4" fill="#333333"/>
+  <rect x="400" y="60" width="40" height="20" rx="4" fill="#333333"/>
   
-  <!-- Lista tokenów -->
-  <rect x="40" y="280" width="520" height="480" rx="16" fill="#1E1E1E"/>
+  <!-- Hero section -->
+  <rect x="140" y="120" width="200" height="30" rx="4" fill="#FF007A"/>
+  <rect x="140" y="160" width="150" height="20" rx="4" fill="#333333"/>
+  <rect x="140" y="190" width="150" height="20" rx="4" fill="#333333"/>
+  <rect x="140" y="230" width="100" height="30" rx="15" fill="#FF007A"/>
   
-  <!-- Token 1 -->
-  <rect x="60" y="300" width="480" height="80" rx="12" fill="#2A2A2A"/>
-  <circle cx="100" cy="340" r="20" fill="#FF0080"/>
-  <rect x="140" y="320" width="100" height="20" rx="4" fill="#FFFFFF"/>
-  <rect x="140" y="350" width="160" height="16" rx="4" fill="#666666"/>
-  <rect x="400" y="330" width="120" height="24" rx="4" fill="#FF0080"/>
+  <!-- Decorative elements -->
+  <circle cx="400" cy="180" r="40" fill="url(#circle-gradient)" fill-opacity="0.1"/>
+  <circle cx="450" cy="150" r="20" fill="url(#circle-gradient)" fill-opacity="0.1"/>
   
-  <!-- Token 2 -->
-  <rect x="60" y="400" width="480" height="80" rx="12" fill="#2A2A2A"/>
-  <circle cx="100" cy="440" r="20" fill="#7928CA"/>
-  <rect x="140" y="420" width="100" height="20" rx="4" fill="#FFFFFF"/>
-  <rect x="140" y="450" width="160" height="16" rx="4" fill="#666666"/>
-  <rect x="400" y="430" width="120" height="24" rx="4" fill="#7928CA"/>
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="laptop-gradient" x1="20" y1="20" x2="580" y2="380" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2A2A2A"/>
+      <stop offset="100%" stop-color="#1A1A1A"/>
+    </linearGradient>
+    <linearGradient id="circle-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF007A"/>
+      <stop offset="100%" stop-color="#7928CA"/>
+    </linearGradient>
+  </defs>
   
-  <!-- Token 3 -->
-  <rect x="60" y="500" width="480" height="80" rx="12" fill="#2A2A2A"/>
-  <circle cx="100" cy="540" r="20" fill="#00FF00"/>
-  <rect x="140" y="520" width="100" height="20" rx="4" fill="#FFFFFF"/>
-  <rect x="140" y="550" width="160" height="16" rx="4" fill="#666666"/>
-  <rect x="400" y="530" width="120" height="24" rx="4" fill="#00FF00"/>
-  
-  <!-- Nawigacja -->
-  <rect x="40" y="780" width="520" height="60" rx="16" fill="#1E1E1E"/>
-  <circle cx="120" cy="810" r="16" fill="#FF0080"/>
-  <circle cx="300" cy="810" r="16" fill="#666666"/>
-  <circle cx="480" cy="810" r="16" fill="#666666"/>
+  <!-- Reflections -->
+  <rect x="120" y="40" width="360" height="260" fill="white" fill-opacity="0.05"/>
+  <path d="M50 320H550L580 380H20L50 320Z" fill="white" fill-opacity="0.05"/>
 </svg>

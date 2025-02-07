@@ -61,6 +61,7 @@
       font-size: 1.1rem;
       margin-bottom: $spacing-md;
       color: $color-text;
+      font-weight: 600;
     }
 
     ul {
@@ -90,12 +91,14 @@
     }
 
     a {
-      font-size: 1.25rem;
+      font-size: 1.5rem;
       opacity: 0.7;
       transition: $transition-base;
+      color: $color-text;
 
       &:hover {
         opacity: 1;
+        color: $color-primary;
         transform: translateY(-2px);
       }
     }
@@ -110,25 +113,39 @@
     color: $color-text-secondary;
     font-size: 0.9rem;
 
-    @media (max-width: $breakpoint-sm) {
+    @media (max-width: $breakpoint-md) {
       flex-direction: column;
-      gap: $spacing-sm;
+      gap: $spacing-md;
       text-align: center;
     }
   }
 
-  &__github {
-    color: $color-text-secondary;
+  &__contact {
     display: flex;
     align-items: center;
-    gap: $spacing-xs;
-
-    &:hover {
-      color: $color-primary;
-    }
+    gap: $spacing-md;
+    font-size: 0.9rem;
 
     @media (max-width: $breakpoint-sm) {
-      justify-content: center;
+      flex-direction: column;
+      gap: $spacing-xs;
+    }
+
+    a {
+      color: $color-text-secondary;
+      transition: $transition-base;
+
+      &:hover {
+        color: $color-primary;
+      }
+    }
+
+    span {
+      color: rgba($color-text, 0.3);
+
+      @media (max-width: $breakpoint-sm) {
+        display: none;
+      }
     }
   }
 }

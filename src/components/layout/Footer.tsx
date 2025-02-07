@@ -1,4 +1,4 @@
-import { FaGithub, FaTwitter, FaTelegram, FaDiscord } from "react-icons/fa";
+import { FaGithub, FaLinkedin, FaFacebook } from "react-icons/fa";
 import { Link } from "react-scroll";
 import "./Footer.scss";
 
@@ -6,21 +6,23 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const mainLinks = [
-    { name: "About", to: "about" },
-    { name: "Roadmap", to: "roadmap" },
+    { name: "Home", to: "hero" },
+    { name: "O mnie", to: "about" },
+    { name: "Usługi", to: "services" },
+    { name: "Portfolio", to: "portfolio" },
     { name: "FAQ", to: "faq" },
+    { name: "Kontakt", to: "contact" },
   ];
 
   const legalLinks = [
-    { name: "Privacy Policy", href: "#" },
-    { name: "Terms of Service", href: "#" },
+    { name: "Polityka prywatności", href: "#" },
+    { name: "Regulamin", href: "#" },
   ];
 
   const socialLinks = [
-    { name: "GitHub", icon: FaGithub, href: "#" },
-    { name: "Twitter", icon: FaTwitter, href: "#" },
-    { name: "Telegram", icon: FaTelegram, href: "#" },
-    { name: "Discord", icon: FaDiscord, href: "#" },
+    { name: "LinkedIn", icon: FaLinkedin, href: "https://linkedin.com" },
+    { name: "GitHub", icon: FaGithub, href: "https://github.com" },
+    { name: "Facebook", icon: FaFacebook, href: "https://facebook.com" },
   ];
 
   return (
@@ -34,14 +36,14 @@ const Footer = () => {
               duration={500}
               className="footer__logo"
             >
-              Fearless
+              DominDev
             </Link>
-            <p className="footer__description">Multi-Chain Crypto Management</p>
+            <p className="footer__description">WordPress Development</p>
           </div>
 
           <nav className="footer__nav">
             <div className="footer__links">
-              <h4>Navigation</h4>
+              <h4>Menu</h4>
               <ul>
                 {mainLinks.map((link) => (
                   <li key={link.to}>
@@ -59,7 +61,7 @@ const Footer = () => {
             </div>
 
             <div className="footer__links">
-              <h4>Legal</h4>
+              <h4>Dokumenty</h4>
               <ul>
                 {legalLinks.map((link) => (
                   <li key={link.name}>
@@ -70,7 +72,7 @@ const Footer = () => {
             </div>
 
             <div className="footer__links">
-              <h4>Community</h4>
+              <h4>Social Media</h4>
               <ul className="footer__social">
                 {socialLinks.map((link) => {
                   const Icon = link.icon;
@@ -93,15 +95,12 @@ const Footer = () => {
         </div>
 
         <div className="footer__bottom">
-          <p>&copy; {currentYear} Fearless. All rights reserved.</p>
-          <a
-            href="https://github.com/fearless-wallet"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="footer__github"
-          >
-            View on GitHub
-          </a>
+          <p>&copy; {currentYear} DominDev. Wszelkie prawa zastrzeżone.</p>
+          <div className="footer__contact">
+            <a href="mailto:kontakt@domindev.pl">kontakt@domindev.pl</a>
+            <span>|</span>
+            <a href="tel:+48500600700">+48 500 600 700</a>
+          </div>
         </div>
       </div>
     </footer>
