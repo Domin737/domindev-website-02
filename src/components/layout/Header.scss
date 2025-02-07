@@ -28,6 +28,9 @@
     grid-template-columns: auto 1fr auto auto;
     align-items: center;
     gap: $spacing-md;
+    max-width: $container-max-width;
+    margin: 0 auto;
+    padding: 0 $spacing-lg;
 
     @media (max-width: $breakpoint-md) {
       grid-template-columns: auto auto;
