@@ -162,7 +162,7 @@ button {
     0 100%,
     0 15px
   );
-  border-radius: 2px; // Bardziej subtelne zaokrąglenie
+  border-radius: 4px; // Zwiększone zaokrąglenie dla niesciętych rogów
 
   &::before {
     content: "";
@@ -232,7 +232,7 @@ button {
     0 100%,
     0 15px
   );
-  border-radius: 2px;
+  border-radius: 4px; // Zwiększone zaokrąglenie dla niesciętych rogów
 
   &::before {
     content: "";
@@ -310,7 +310,7 @@ button {
     0 100%,
     0 15px
   );
-  border-radius: 2px;
+  border-radius: 4px; // Zwiększone zaokrąglenie dla niesciętych rogów
 
   &::before {
     content: "";

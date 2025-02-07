@@ -1,16 +1,21 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-scroll";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll } from "framer-motion";
 import "./Header.scss";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { scrollY } = useScroll();
-  const headerBackground = useTransform(
-    scrollY,
-    [0, 100],
-    ["rgba(11, 10, 12, 0)", "rgba(11, 10, 12, 0.95)"]
-  );
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const updateScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener("scroll", updateScroll);
+    return () => window.removeEventListener("scroll", updateScroll);
+  }, []);
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -36,11 +41,8 @@ const Header = () => {
   }, [isOpen]);
 
   return (
-    <motion.header
-      className="header"
-      style={{ backgroundColor: headerBackground }}
-    >
-      <div className="container header__container">
+    <motion.header className={`header ${isScrolled ? "is-scrolled" : ""}`}>
+      <div className="container header__grid">
         <Link to="hero" smooth={true} duration={500} className="header__logo">
           DominDev
         </Link>
