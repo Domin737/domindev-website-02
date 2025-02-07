@@ -90,33 +90,98 @@ button {
   -webkit-text-fill-color: transparent;
 }
 
+@keyframes borderAnimation {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: $spacing-sm $spacing-md;
-  border-radius: 8px;
+  clip-path: polygon(
+    15px 0,
+    100% 0,
+    100% calc(100% - 15px),
+    calc(100% - 15px) 100%,
+    0 100%,
+    0 15px
+  );
   font-weight: 600;
   transition: $transition-base;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    z-index: -1;
+  }
 
   &-primary {
-    background: $gradient-primary;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 0, 128, 0.8) 0%,
+      rgba(121, 40, 202, 0.8) 100%
+    );
     color: $color-text;
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 4px 20px rgba($color-primary, 0.4);
+      box-shadow: 0 0 20px rgba($color-primary, 0.6);
     }
   }
 
   &-secondary {
-    background: rgba($color-text, 0.1);
+    background: rgba(255, 255, 255, 0.1);
     color: $color-text;
 
     &:hover {
-      background: rgba($color-text, 0.15);
+      background: rgba(255, 255, 255, 0.15);
       transform: translateY(-2px);
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
     }
+  }
+}
+
+.card {
+  position: relative;
+  transition: $transition-base;
+
+  &:hover::before {
+    content: "";
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(
+      90deg,
+      $color-primary,
+      #7928ca,
+      #ff0080,
+      #7928ca
+    );
+    background-size: 300% 300%;
+    animation: borderAnimation 3s ease infinite;
+    border-radius: inherit;
+    z-index: -1;
   }
 }
 
