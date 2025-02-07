@@ -5,7 +5,7 @@
   min-height: 100vh;
   display: flex;
   align-items: center;
-  padding: calc($spacing-xl * 2) 0;
+  padding: clamp($spacing-xl, 10vw, calc($spacing-xl * 2)) 0;
   overflow: hidden;
 
   &__canvas {
@@ -72,8 +72,11 @@
     }
 
     .btn {
-      padding: $spacing-sm $spacing-lg;
-      font-size: 1.1rem;
+      padding: clamp($spacing-xs, 2vw, $spacing-sm)
+        clamp($spacing-md, 4vw, $spacing-lg);
+      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      width: 100%;
+      max-width: 250px;
     }
   }
 
@@ -105,7 +108,7 @@
       filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.4));
 
       @media (max-width: $breakpoint-lg) {
-        max-width: 400px;
+        max-width: min(400px, 90vw);
       }
     }
   }

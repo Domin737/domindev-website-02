@@ -19,7 +19,7 @@
   }
 
   &__item {
-    padding: $spacing-lg;
+    padding: clamp($spacing-md, 5vw, $spacing-lg);
     background: rgba($color-text, 0.03);
     border-radius: 16px;
     transition: $transition-base;
@@ -27,8 +27,8 @@
     overflow: hidden;
 
     i {
-      font-size: 2.5rem;
-      margin-bottom: $spacing-md;
+      font-size: clamp(2rem, 5vw, 2.5rem);
+      margin-bottom: clamp($spacing-sm, 3vw, $spacing-md);
       background: $gradient-primary;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -56,19 +56,23 @@
 
   &__cta {
     text-align: center;
-    padding: $spacing-lg;
+    padding: clamp($spacing-md, 5vw, $spacing-lg);
+    margin-top: clamp($spacing-md, 5vw, $spacing-xl);
     background: rgba($color-text, 0.03);
     border-radius: 16px;
 
     p {
-      font-size: 1.2rem;
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
       margin-bottom: $spacing-md;
       color: $color-text-secondary;
     }
 
     .btn {
-      font-size: 1.1rem;
-      padding: $spacing-sm $spacing-lg;
+      font-size: clamp(0.9rem, 2vw, 1.1rem);
+      padding: clamp($spacing-xs, 2vw, $spacing-sm)
+        clamp($spacing-md, 4vw, $spacing-lg);
+      width: 100%;
+      max-width: 300px;
     }
   }
 }

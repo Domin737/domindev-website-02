@@ -21,8 +21,8 @@
   }
 
   &__search {
-    max-width: 500px;
-    margin: 0 auto;
+    max-width: min(500px, 90%);
+    margin: 0 auto $spacing-lg;
 
     input {
       width: 100%;
@@ -48,7 +48,7 @@
 
   &__grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
     gap: $spacing-md;
     margin-bottom: $spacing-xl;
   }
@@ -57,7 +57,7 @@
     background: rgba($color-text, 0.05);
     border: 1px solid rgba($color-text, 0.1);
     border-radius: 12px;
-    padding: $spacing-md;
+    padding: clamp($spacing-sm, 3vw, $spacing-md);
     text-align: center;
     transition: $transition-base;
     cursor: pointer;
@@ -76,16 +76,16 @@
   }
 
   &__icon {
-    font-size: 2.5rem;
-    margin-bottom: $spacing-sm;
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    margin-bottom: clamp($spacing-xs, 2vw, $spacing-sm);
     display: flex;
     align-items: center;
     justify-content: center;
     height: 60px;
 
     img {
-      width: 40px;
-      height: 40px;
+      width: clamp(32px, 6vw, 40px);
+      height: clamp(32px, 6vw, 40px);
       object-fit: contain;
     }
   }
@@ -104,17 +104,7 @@
     }
   }
 
-  @media (max-width: $breakpoint-md) {
-    &__grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
   @media (max-width: $breakpoint-sm) {
-    &__grid {
-      grid-template-columns: 1fr;
-    }
-
     &__header {
       h2 {
         font-size: 2rem;
