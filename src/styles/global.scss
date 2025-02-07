@@ -107,14 +107,8 @@ button {
   align-items: center;
   justify-content: center;
   padding: $spacing-sm $spacing-md;
-  clip-path: polygon(
-    15px 0,
-    100% 0,
-    100% calc(100% - 15px),
-    calc(100% - 15px) 100%,
-    0 100%,
-    0 15px
-  );
+  border-radius: 0 8px 0 8px;
+  clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
   font-weight: 600;
   transition: $transition-base;
   position: relative;

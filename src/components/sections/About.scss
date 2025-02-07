@@ -19,6 +19,14 @@
       font-size: 1.1rem;
       color: $color-text-secondary;
       margin-bottom: $spacing-md;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      hyphens: auto;
+
+      @media (max-width: $breakpoint-md) {
+        font-size: 1rem;
+        padding-right: $spacing-sm;
+      }
     }
   }
 

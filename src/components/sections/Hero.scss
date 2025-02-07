@@ -61,6 +61,8 @@
   &__cta {
     display: flex;
     gap: $spacing-md;
+    align-items: center;
+    justify-content: center;
 
     @media (max-width: $breakpoint-lg) {
       justify-content: center;
@@ -72,11 +74,23 @@
     }
 
     .btn {
-      padding: clamp($spacing-xs, 2vw, $spacing-sm)
-        clamp($spacing-md, 4vw, $spacing-lg);
       font-size: clamp(0.9rem, 2vw, 1.1rem);
-      width: 100%;
-      max-width: 250px;
+      height: 48px;
+      min-width: 180px;
+      width: auto;
+      white-space: nowrap;
+      text-align: center;
+      line-height: 48px;
+      padding: 0 $spacing-md;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      @media (max-width: $breakpoint-sm) {
+        width: 100%;
+        white-space: normal;
+      }
     }
   }
 
