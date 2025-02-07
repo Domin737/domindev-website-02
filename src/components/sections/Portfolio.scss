@@ -45,7 +45,15 @@
     overflow: hidden;
     aspect-ratio: 16/9;
     cursor: pointer;
-    clip-path: polygon(20px 0, 100% 0, calc(100% - 20px) 100%, 0 100%);
+    clip-path: polygon(
+      15px 0,
+      100% 0,
+      100% calc(100% - 15px),
+      calc(100% - 15px) 100%,
+      0 100%,
+      0 15px
+    );
+    border-radius: 2px;
     border: 1px solid rgba($color-secondary, 0.1);
     transition: $transition-smooth;
     animation: fadeInUp 1s ease-out backwards;

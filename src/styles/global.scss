@@ -224,7 +224,15 @@ button {
   backdrop-filter: blur(10px);
   border: 1px solid rgba($color-secondary, 0.1);
   padding: $spacing-md;
-  border-radius: 1rem;
+  clip-path: polygon(
+    15px 0,
+    100% 0,
+    100% calc(100% - 15px),
+    calc(100% - 15px) 100%,
+    0 100%,
+    0 15px
+  );
+  border-radius: 2px;
 
   &::before {
     content: "";
@@ -234,7 +242,7 @@ button {
     opacity: 0;
     transition: $transition-hover;
     z-index: -2;
-    border-radius: inherit;
+    clip-path: inherit;
   }
 
   &:hover {
@@ -286,6 +294,34 @@ button {
   background: rgba($color-background-darker, 0.5);
   backdrop-filter: blur(10px);
   border: 1px solid rgba($color-secondary, 0.1);
+}
+
+.container-styled {
+  position: relative;
+  background: rgba($color-background-darker, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba($color-secondary, 0.1);
+  padding: $spacing-md;
+  clip-path: polygon(
+    15px 0,
+    100% 0,
+    100% calc(100% - 15px),
+    calc(100% - 15px) 100%,
+    0 100%,
+    0 15px
+  );
+  border-radius: 2px;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: $gradient-primary;
+    opacity: 0;
+    transition: $transition-hover;
+    z-index: -2;
+    clip-path: inherit;
+  }
 }
 
 .hover-scale {

@@ -85,8 +85,9 @@
 
     @media (max-width: $breakpoint-sm) {
       grid-template-columns: 1fr;
-      gap: $spacing-md;
+      gap: $spacing-xl;
       text-align: center;
+      padding: $spacing-md 0;
     }
   }
 
@@ -152,6 +153,16 @@
 
     @media (max-width: $breakpoint-sm) {
       justify-content: center;
+      gap: $spacing-lg !important;
+
+      a {
+        width: 48px;
+        height: 48px;
+
+        i {
+          font-size: 1.5rem;
+        }
+      }
     }
 
     a {
@@ -234,7 +245,15 @@
 
     @media (max-width: $breakpoint-sm) {
       flex-direction: column;
-      gap: $spacing-xs;
+      gap: $spacing-md;
+      padding: $spacing-md 0;
+
+      a {
+        padding: $spacing-xs $spacing-md;
+        background: rgba($color-background-darker, 0.3);
+        border-radius: 4px;
+        font-size: 1rem;
+      }
     }
 
     a {

@@ -74,7 +74,15 @@
     background: rgba($color-background-darker, 0.3);
     border: 1px solid rgba($color-secondary, 0.1);
     transition: $transition-hover;
-    clip-path: polygon(20px 0, 100% 0, calc(100% - 20px) 100%, 0 100%);
+    clip-path: polygon(
+      15px 0,
+      100% 0,
+      100% calc(100% - 15px),
+      calc(100% - 15px) 100%,
+      0 100%,
+      0 15px
+    );
+    border-radius: 2px;
 
     &:hover {
       transform: $animation-hover-scale;
@@ -167,7 +175,15 @@
     backdrop-filter: blur(10px);
     border: 1px solid rgba($color-secondary, 0.1);
     padding: $spacing-lg;
-    clip-path: polygon(20px 0, 100% 0, calc(100% - 20px) 100%, 0 100%);
+    clip-path: polygon(
+      15px 0,
+      100% 0,
+      100% calc(100% - 15px),
+      calc(100% - 15px) 100%,
+      0 100%,
+      0 15px
+    );
+    border-radius: 2px;
     display: flex;
     flex-direction: column;
     gap: $spacing-md;
@@ -219,7 +235,15 @@
     color: $color-text;
     font-family: $font-primary;
     transition: $transition-hover;
-    clip-path: polygon(10px 0, 100% 0, calc(100% - 10px) 100%, 0 100%);
+    clip-path: polygon(
+      15px 0,
+      100% 0,
+      100% calc(100% - 15px),
+      calc(100% - 15px) 100%,
+      0 100%,
+      0 15px
+    );
+    border-radius: 2px;
 
     &:focus {
       outline: none;
