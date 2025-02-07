@@ -1,5 +1,5 @@
 @use "./_variables" as *;
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap");
 
 *,
 *::before,
@@ -16,10 +16,11 @@ html {
 
 body {
   font-family: $font-primary;
-  background: $color-background;
+  background: $gradient-background;
   color: $color-text;
   line-height: 1.5;
   overflow-x: hidden;
+  min-height: 100vh;
 }
 
 h1,
@@ -28,16 +29,19 @@ h3,
 h4,
 h5,
 h6 {
-  font-weight: 700;
+  font-weight: $font-weight-bold;
   line-height: 1.2;
   margin-bottom: $spacing-md;
 }
 
 h1 {
   font-size: $font-size-h1;
-  background: $gradient-primary;
+  font-weight: $font-weight-black;
+  background: $gradient-text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  text-shadow: $neon-glow-primary;
+  letter-spacing: -0.02em;
 
   @media (max-width: $breakpoint-md) {
     font-size: calc($font-size-h1 * 0.7);
@@ -46,6 +50,9 @@ h1 {
 
 h2 {
   font-size: $font-size-h2;
+  background: $gradient-text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 
   @media (max-width: $breakpoint-md) {
     font-size: calc($font-size-h2 * 0.8);
@@ -55,10 +62,16 @@ h2 {
 a {
   color: $color-primary;
   text-decoration: none;
-  transition: $transition-base;
+  transition: $transition-hover;
+  position: relative;
 
   &:hover {
-    opacity: 0.8;
+    text-shadow: $neon-glow-primary;
+    transform: $animation-hover-scale;
+  }
+
+  &:active {
+    transform: $animation-click-scale;
   }
 }
 
@@ -78,16 +91,44 @@ button {
 
 .section {
   padding: $spacing-xl 0;
+  position: relative;
+  overflow: hidden;
 
   @media (max-width: $breakpoint-md) {
     padding: $spacing-lg 0;
   }
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: $gradient-primary;
+    opacity: 0.2;
+  }
 }
 
 .gradient-text {
-  background: $gradient-primary;
+  background: $gradient-text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+@keyframes neonPulse {
+  0% {
+    opacity: 0.8;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 1;
+    filter: brightness(1.2);
+  }
+  100% {
+    opacity: 0.8;
+    filter: brightness(1);
+  }
 }
 
 @keyframes borderAnimation {
@@ -107,75 +148,107 @@ button {
   align-items: center;
   justify-content: center;
   padding: $spacing-sm $spacing-md;
-  border-radius: 0 8px 0 8px;
-  clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
-  font-weight: 600;
-  transition: $transition-base;
+  font-weight: $font-weight-bold;
+  transition: $transition-button;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: none;
+  min-width: 160px;
+  clip-path: polygon(
+    15px 0,
+    100% 0,
+    100% calc(100% - 15px),
+    calc(100% - 15px) 100%,
+    0 100%,
+    0 15px
+  );
+  border-radius: 2px; // Bardziej subtelne zaokrąglenie
 
   &::before {
     content: "";
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
+    z-index: -1;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    background: inherit;
+    clip-path: inherit;
     z-index: -1;
   }
 
   &-primary {
-    background: linear-gradient(
-      135deg,
-      rgba(255, 0, 128, 0.8) 0%,
-      rgba(121, 40, 202, 0.8) 100%
-    );
+    background: $color-primary; // Używamy jednolitego koloru zamiast gradientu
     color: $color-text;
 
     &:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 0 20px rgba($color-primary, 0.6);
+      transform: $animation-hover-scale;
+      box-shadow: $neon-glow-primary;
+    }
+
+    &:active {
+      transform: $animation-click-scale;
     }
   }
 
   &-secondary {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
     color: $color-text;
+    border: 1px solid rgba($color-secondary, 0.3);
 
     &:hover {
-      background: rgba(255, 255, 255, 0.15);
-      transform: translateY(-2px);
-      box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.1);
+      transform: $animation-hover-scale;
+      box-shadow: $neon-glow-secondary;
+      border-color: $color-secondary;
     }
+
+    &:active {
+      transform: $animation-click-scale;
+    }
+  }
+
+  @media (max-width: $breakpoint-md) {
+    width: 100%;
   }
 }
 
 .card {
   position: relative;
-  transition: $transition-base;
+  transition: $transition-smooth;
+  background: rgba($color-background-darker, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba($color-secondary, 0.1);
+  padding: $spacing-md;
+  border-radius: 1rem;
 
-  &:hover::before {
+  &::before {
     content: "";
     position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(
-      90deg,
-      $color-primary,
-      #7928ca,
-      #ff0080,
-      #7928ca
-    );
-    background-size: 300% 300%;
-    animation: borderAnimation 3s ease infinite;
+    inset: 0;
+    background: $gradient-primary;
+    opacity: 0;
+    transition: $transition-hover;
+    z-index: -2;
     border-radius: inherit;
-    z-index: -1;
+  }
+
+  &:hover {
+    transform: $animation-hover-scale;
+    border-color: rgba($color-secondary, 0.3);
+    box-shadow: $neon-glow-secondary;
+
+    &::before {
+      opacity: 0.05;
+    }
+  }
+
+  &:active {
+    transform: $animation-click-scale;
   }
 }
 
@@ -196,4 +269,33 @@ button {
 .grid {
   display: grid;
   gap: $spacing-md;
+}
+
+// Nowe klasy pomocnicze
+.neon-text {
+  text-shadow: $neon-glow-primary;
+  animation: neonPulse 2s infinite;
+}
+
+.neon-border {
+  border: 1px solid $color-primary;
+  box-shadow: $neon-glow-primary;
+}
+
+.glass-effect {
+  background: rgba($color-background-darker, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba($color-secondary, 0.1);
+}
+
+.hover-scale {
+  transition: $transition-hover;
+
+  &:hover {
+    transform: $animation-hover-scale;
+  }
+
+  &:active {
+    transform: $animation-click-scale;
+  }
 }
