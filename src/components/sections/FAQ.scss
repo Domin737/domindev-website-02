@@ -1,0 +1,94 @@
+@use "../../styles/variables" as *;
+
+.faq {
+  background: $color-background;
+
+  &__grid {
+    display: grid;
+    gap: $spacing-md;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  &__item {
+    background: rgba($color-text, 0.03);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: $transition-base;
+
+    &:hover {
+      background: rgba($color-text, 0.05);
+    }
+
+    &--open {
+      background: rgba($color-text, 0.05);
+
+      .faq__icon {
+        transform: rotate(45deg);
+      }
+
+      .faq__answer {
+        max-height: 500px;
+        padding: $spacing-md $spacing-lg;
+      }
+    }
+  }
+
+  &__question {
+    padding: $spacing-md $spacing-lg;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: $spacing-md;
+
+    h3 {
+      font-size: 1.1rem;
+      margin: 0;
+      color: $color-text;
+      flex: 1;
+    }
+  }
+
+  &__icon {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    transition: $transition-base;
+
+    &::before,
+    &::after {
+      content: "";
+      position: absolute;
+      background: $color-primary;
+      border-radius: 2px;
+    }
+
+    &::before {
+      width: 100%;
+      height: 2px;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    &::after {
+      width: 2px;
+      height: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  }
+
+  &__answer {
+    max-height: 0;
+    padding: 0 $spacing-lg;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+    p {
+      color: $color-text-secondary;
+      line-height: 1.6;
+      margin: 0;
+    }
+  }
+}

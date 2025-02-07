@@ -1,0 +1,45 @@
+// Colors
+$color-background: #0b0a0c;
+$color-primary: #ff0080;
+$color-text: #ffffff;
+$color-text-secondary: rgba(255, 255, 255, 0.7);
+$color-dark-purple: #0e0b15;
+
+// Gradients
+$gradient-primary: linear-gradient(135deg, #ff0080 0%, #7928ca 100%);
+$gradient-background: linear-gradient(180deg, #0b0a0c 0%, #0e0b15 100%);
+
+// Typography
+$font-primary: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+  Oxygen, Ubuntu, Cantarell, sans-serif;
+$font-size-base: 16px;
+$font-size-h1: 4rem;
+$font-size-h2: 3rem;
+$font-size-h3: 2rem;
+$font-size-h4: 1.5rem;
+
+// Spacing
+$spacing-xs: 0.5rem;
+$spacing-sm: 1rem;
+$spacing-md: 2rem;
+$spacing-lg: 4rem;
+$spacing-xl: 8rem;
+
+// Breakpoints
+$breakpoint-sm: 576px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 992px;
+$breakpoint-xl: 1200px;
+
+// Transitions
+$transition-base: all 0.3s ease-in-out;
+$transition-smooth: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+
+// Z-indexes
+$z-index-header: 1000;
+$z-index-modal: 2000;
+$z-index-tooltip: 3000;
+
+// Container
+$container-padding: 1rem;
+$container-max-width: 1200px;

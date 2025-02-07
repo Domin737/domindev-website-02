@@ -1,0 +1,135 @@
+@use "../../styles/variables" as *;
+
+.contact {
+  background: $color-dark-purple;
+
+  &__content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-xl;
+    align-items: start;
+
+    @media (max-width: $breakpoint-md) {
+      grid-template-columns: 1fr;
+      gap: $spacing-lg;
+    }
+  }
+
+  &__info {
+    h3 {
+      font-size: $font-size-h3;
+      margin-bottom: $spacing-md;
+    }
+
+    p {
+      color: $color-text-secondary;
+      margin-bottom: $spacing-lg;
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+  }
+
+  &__details {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+
+  &__detail {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+
+    i {
+      font-size: 1.2rem;
+      color: $color-primary;
+    }
+
+    a {
+      color: $color-text;
+      transition: $transition-base;
+
+      &:hover {
+        color: $color-primary;
+      }
+    }
+  }
+
+  &__social {
+    display: flex;
+    gap: $spacing-md;
+    margin-top: $spacing-lg;
+
+    &-link {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba($color-text, 0.05);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: $transition-base;
+
+      i {
+        font-size: 1.2rem;
+        color: $color-text;
+        transition: $transition-base;
+      }
+
+      &:hover {
+        background: $color-primary;
+        transform: translateY(-3px);
+
+        i {
+          color: $color-text;
+        }
+      }
+    }
+  }
+
+  &__form {
+    background: rgba($color-text, 0.03);
+    padding: $spacing-lg;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-md;
+  }
+}
+
+.form__group {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-xs;
+
+  label {
+    color: $color-text;
+    font-weight: 500;
+  }
+
+  input,
+  textarea {
+    background: rgba($color-text, 0.05);
+    border: 1px solid rgba($color-text, 0.1);
+    border-radius: 8px;
+    padding: $spacing-sm;
+    color: $color-text;
+    font-family: $font-primary;
+    transition: $transition-base;
+
+    &:focus {
+      outline: none;
+      border-color: $color-primary;
+      background: rgba($color-text, 0.08);
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+}
+
+.btn-primary {
+  margin-top: $spacing-sm;
+}

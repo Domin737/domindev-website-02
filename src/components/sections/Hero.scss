@@ -1,0 +1,116 @@
+@use "../../styles/_variables" as *;
+
+.hero {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  padding: calc($spacing-xl * 2) 0;
+  overflow: hidden;
+
+  &__canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    opacity: 0.5;
+  }
+
+  &__container {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-xl;
+    align-items: center;
+
+    @media (max-width: $breakpoint-lg) {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+  }
+
+  &__content {
+    max-width: 600px;
+
+    @media (max-width: $breakpoint-lg) {
+      max-width: 100%;
+      margin: 0 auto;
+    }
+  }
+
+  &__title {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 1.1;
+    margin-bottom: $spacing-md;
+    background: $gradient-primary;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+  }
+
+  &__subtitle {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: $color-text-secondary;
+    margin-bottom: $spacing-lg;
+    line-height: 1.6;
+  }
+
+  &__cta {
+    display: flex;
+    gap: $spacing-md;
+
+    @media (max-width: $breakpoint-lg) {
+      justify-content: center;
+    }
+
+    @media (max-width: $breakpoint-sm) {
+      flex-direction: column;
+      gap: $spacing-sm;
+    }
+
+    .btn {
+      padding: $spacing-sm $spacing-lg;
+      font-size: 1.1rem;
+    }
+  }
+
+  &__image {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+
+    &::before {
+      content: "";
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(
+        circle,
+        rgba($color-primary, 0.1) 0%,
+        transparent 70%
+      );
+      filter: blur(40px);
+      z-index: -1;
+    }
+
+    img {
+      width: 100%;
+      max-width: 600px;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.4));
+
+      @media (max-width: $breakpoint-lg) {
+        max-width: 400px;
+      }
+    }
+  }
+
+  @media (max-width: $breakpoint-md) {
+    padding: calc($spacing-xl * 1.5) 0;
+  }
+}

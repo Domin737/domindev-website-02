@@ -1,0 +1,140 @@
+@use "./_variables" as *;
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: $font-size-base;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: $font-primary;
+  background: $color-background;
+  color: $color-text;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: $spacing-md;
+}
+
+h1 {
+  font-size: $font-size-h1;
+  background: $gradient-primary;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+
+  @media (max-width: $breakpoint-md) {
+    font-size: calc($font-size-h1 * 0.7);
+  }
+}
+
+h2 {
+  font-size: $font-size-h2;
+
+  @media (max-width: $breakpoint-md) {
+    font-size: calc($font-size-h2 * 0.8);
+  }
+}
+
+a {
+  color: $color-primary;
+  text-decoration: none;
+  transition: $transition-base;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+.container {
+  width: 100%;
+  max-width: $container-max-width;
+  margin: 0 auto;
+  padding: 0 $container-padding;
+}
+
+.section {
+  padding: $spacing-xl 0;
+
+  @media (max-width: $breakpoint-md) {
+    padding: $spacing-lg 0;
+  }
+}
+
+.gradient-text {
+  background: $gradient-primary;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $spacing-sm $spacing-md;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: $transition-base;
+
+  &-primary {
+    background: $gradient-primary;
+    color: $color-text;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba($color-primary, 0.4);
+    }
+  }
+
+  &-secondary {
+    background: rgba($color-text, 0.1);
+    color: $color-text;
+
+    &:hover {
+      background: rgba($color-text, 0.15);
+      transform: translateY(-2px);
+    }
+  }
+}
+
+.flex {
+  display: flex;
+
+  &-center {
+    align-items: center;
+    justify-content: center;
+  }
+
+  &-between {
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: $spacing-md;
+}
