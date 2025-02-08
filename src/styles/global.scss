@@ -22,7 +22,15 @@ body {
   overflow-x: hidden;
   min-height: 100vh;
 
-  // Customowy scrollbar
+  @media (max-width: $breakpoint-md) {
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  // Customowy scrollbar (tylko desktop)
   &::-webkit-scrollbar {
     width: 8px;
     background-color: $color-background;
