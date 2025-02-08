@@ -3,6 +3,7 @@ import Header from "./components/layout/Header";
 import Preloader from "./components/layout/Preloader";
 import Footer from "./components/layout/Footer";
 import { ScrollToTop } from "./components/layout/ScrollToTop";
+import ThemeToggle from "./components/layout/ThemeToggle";
 import Hero from "./components/sections/Hero";
 import About from "./components/sections/About";
 import Services from "./components/sections/Services";
@@ -42,6 +43,7 @@ function App() {
         <Contact />
       </main>
       <Footer />
+      <ThemeToggle />
       <ScrollToTop />
     </>
   );
