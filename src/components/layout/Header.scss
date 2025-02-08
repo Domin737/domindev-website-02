@@ -31,10 +31,12 @@
     max-width: $container-max-width;
     margin: 0 auto;
     padding: 0 $spacing-lg;
+    min-height: 72px;
 
     @media (max-width: $breakpoint-md) {
       grid-template-columns: auto auto;
       justify-content: space-between;
+      min-height: 64px;
     }
   }
 
