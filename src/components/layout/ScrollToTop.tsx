@@ -1,35 +1,24 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import "./ScrollToTop.scss";
 
 export const ScrollToTop = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const lastScrollY = useRef(0);
-  const scrollTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const HIDE_DELAY = 800; // 0.8 sekundy
+  const SCROLL_THRESHOLD = 200; // próg przewinięcia w pikselach
 
-  const handleScroll = () => {
-    const currentScrollY = window.scrollY;
-
-    // Pokazuj przycisk tylko podczas przewijania
-    if (Math.abs(currentScrollY - lastScrollY.current) > 50) {
-      setIsVisible(true);
-      lastScrollY.current = currentScrollY;
-
-      // Resetuj timer przy każdym przewinięciu
-      if (scrollTimeout.current) {
-        clearTimeout(scrollTimeout.current);
-      }
-
-      // Ukryj przycisk po 1.5 sekundy bez przewijania
-      scrollTimeout.current = setTimeout(() => {
-        setIsVisible(false);
-      }, 1500);
-    }
-
-    // Ukryj przycisk gdy jesteśmy na górze strony
-    if (currentScrollY < 100) {
+  const hideButton = useCallback(() => {
+    const timeoutId = window.setTimeout(() => {
       setIsVisible(false);
+    }, HIDE_DELAY);
+
+    return timeoutId;
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (window.scrollY > SCROLL_THRESHOLD) {
+      setIsVisible(true);
     }
-  };
+  }, []);
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -39,14 +28,21 @@ export const ScrollToTop = () => {
   };
 
   useEffect(() => {
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (scrollTimeout.current) {
-        clearTimeout(scrollTimeout.current);
-      }
+    let timeoutId: number;
+
+    const scrollListener = () => {
+      handleScroll();
+      window.clearTimeout(timeoutId);
+      timeoutId = hideButton();
     };
-  }, []);
+
+    window.addEventListener("scroll", scrollListener, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", scrollListener);
+      window.clearTimeout(timeoutId);
+    };
+  }, [handleScroll, hideButton]);
 
   return (
     <>
