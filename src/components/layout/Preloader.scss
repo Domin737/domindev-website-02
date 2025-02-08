@@ -1,4 +1,4 @@
-@import "../../styles/_variables.scss";
+@use "../../styles/_variables.scss" as v;
 
 .preloader {
   position: fixed;
@@ -6,7 +6,7 @@
   left: 0;
   width: 100%;
   height: 100vh;
-  background: $color-background;
+  background: v.$color-background;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -31,8 +31,8 @@
 
   .preloader__line {
     position: absolute;
-    background: $color-primary;
-    box-shadow: $neon-glow-primary;
+    background: v.$color-primary;
+    box-shadow: v.$neon-glow-primary;
     border-radius: 2px;
     opacity: 0;
 
@@ -76,9 +76,9 @@
     transform: translate(-50%, -50%);
     width: 20px;
     height: 20px;
-    background: $color-primary;
+    background: v.$color-primary;
     border-radius: 50%;
-    box-shadow: $neon-glow-primary;
+    box-shadow: v.$neon-glow-primary;
     animation: pulseCircle 1.5s ease-in-out infinite;
   }
 }
