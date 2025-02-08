@@ -18,6 +18,10 @@ const themes = {
     primary: "#808080",
     secondary: "#a6a6a6",
   },
+  gold: {
+    primary: "#ffd700",
+    secondary: "#daa520",
+  },
 };
 
 interface AccentColorToggleProps {

@@ -109,6 +109,10 @@
       background: linear-gradient(135deg, #808080 0%, #a6a6a6 100%);
     }
 
+    &--gold {
+      background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
+    }
+
     &.active {
       opacity: 1;
       box-shadow: $neon-glow-primary;
