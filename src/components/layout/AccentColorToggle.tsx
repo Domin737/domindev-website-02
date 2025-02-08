@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import "./ThemeToggle.scss";
+import "./AccentColorToggle.scss";
 
 const themes = {
   pink: {
@@ -20,7 +20,11 @@ const themes = {
   },
 };
 
-const ThemeToggle = () => {
+interface AccentColorToggleProps {
+  onThemeChange?: () => void;
+}
+
+const AccentColorToggle = ({ onThemeChange }: AccentColorToggleProps) => {
   const [currentTheme, setCurrentTheme] = useState("pink");
   const [isOpen, setIsOpen] = useState(false);
   const toggleRef = useRef<HTMLDivElement>(null);
@@ -73,6 +77,7 @@ const ThemeToggle = () => {
     setCurrentTheme(theme);
     updateThemeColors(theme);
     setIsOpen(false);
+    onThemeChange?.();
   };
 
   useEffect(() => {
@@ -80,11 +85,11 @@ const ThemeToggle = () => {
   }, []);
 
   return (
-    <div className="theme-toggle" ref={toggleRef}>
+    <div className="accent-color-toggle" ref={toggleRef}>
       <button
-        className={`theme-toggle__button ${isOpen ? "active" : ""}`}
+        className={`accent-color-toggle__button ${isOpen ? "active" : ""}`}
         onClick={() => setIsOpen(!isOpen)}
-        aria-label="Zmień motyw kolorystyczny"
+        aria-label="Zmień kolor akcentów"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -95,19 +100,21 @@ const ThemeToggle = () => {
           strokeLinecap="round"
           strokeLinejoin="round"
         >
-          <circle cx="12" cy="12" r="5" />
-          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+          <path d="M12 19l7-7 3 3-7 7-3-3z" />
+          <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" />
+          <path d="M2 2l7.586 7.586" />
+          <circle cx="11" cy="11" r="2" />
         </svg>
       </button>
-      <div className={`theme-toggle__colors ${isOpen ? "active" : ""}`}>
+      <div className={`accent-color-toggle__colors ${isOpen ? "active" : ""}`}>
         {Object.keys(themes).map((theme) => (
           <button
             key={theme}
-            className={`theme-toggle__color-button theme-toggle__color-button--${theme} ${
+            className={`accent-color-toggle__color-button accent-color-toggle__color-button--${theme} ${
               currentTheme === theme ? "active" : ""
             }`}
             onClick={() => handleThemeChange(theme)}
-            aria-label={`Zmień motyw na ${theme}`}
+            aria-label={`Zmień kolor akcentów na ${theme}`}
           />
         ))}
       </div>
@@ -115,4 +122,4 @@ const ThemeToggle = () => {
   );
 };
 
-export default ThemeToggle;
+export default AccentColorToggle;

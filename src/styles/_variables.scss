@@ -1,4 +1,11 @@
 :root {
+  // Theme colors
+  --color-background: #0a0a0f;
+  --color-background-darker: #050508;
+  --color-text: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.8);
+  --color-dark-purple: #1a0b2e;
+
   // Colors
   --color-primary: #ff1493;
   --color-secondary: #9d4edd;
@@ -18,14 +25,14 @@
     0 0 20px rgba(157, 78, 221, 0.3), 0 0 30px rgba(157, 78, 221, 0.1);
 }
 
-// Colors
-$color-background: #0a0a0f;
-$color-background-darker: #050508;
+// Theme colors
+$color-background: var(--color-background);
+$color-background-darker: var(--color-background-darker);
+$color-text: var(--color-text);
+$color-text-secondary: var(--color-text-secondary);
+$color-dark-purple: var(--color-dark-purple);
 $color-primary: var(--color-primary);
 $color-secondary: var(--color-secondary);
-$color-text: #ffffff;
-$color-text-secondary: rgba(255, 255, 255, 0.8);
-$color-dark-purple: #1a0b2e;
 
 // Gradients
 $gradient-primary: var(--gradient-primary);

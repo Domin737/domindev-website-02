@@ -1,6 +1,6 @@
 @use "../../styles/variables" as *;
 
-.theme-toggle {
+.accent-color-toggle {
   &__button {
     background: $color-primary;
     color: white;
@@ -48,19 +48,20 @@
   &__colors {
     position: absolute;
     left: 100%;
-    top: 0;
+    top: 50%;
+    transform: translateY(-50%) translateX(-10px);
     margin-left: 10px;
     display: flex;
     flex-direction: row;
     gap: 8px;
     opacity: 0;
-    transform: translateX(-10px);
     pointer-events: none;
     transition: all 0.3s ease;
+    z-index: $z-index-header;
 
     &.active {
       opacity: 1;
-      transform: translateX(0);
+      transform: translateY(-50%) translateX(0);
       pointer-events: all;
     }
   }

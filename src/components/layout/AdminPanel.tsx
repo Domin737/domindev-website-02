@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import ThemeToggle from "./ThemeToggle";
+import AccentColorToggle from "./AccentColorToggle";
+import DarkModeToggle from "./DarkModeToggle";
 import "./AdminPanel.scss";
 
 const AdminPanel = () => {
@@ -43,7 +44,12 @@ const AdminPanel = () => {
         </svg>
       </button>
       <div className={`admin-panel__menu ${isOpen ? "active" : ""}`}>
-        <ThemeToggle />
+        <div className="admin-panel__menu-item">
+          <DarkModeToggle onThemeChange={() => setIsOpen(false)} />
+        </div>
+        <div className="admin-panel__menu-item">
+          <AccentColorToggle onThemeChange={() => setIsOpen(false)} />
+        </div>
       </div>
     </div>
   );
