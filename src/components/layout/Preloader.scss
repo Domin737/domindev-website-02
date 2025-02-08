@@ -1,0 +1,156 @@
+@import "../../styles/_variables.scss";
+
+.preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  background: $color-background;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+
+  &.preloader--hidden {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .preloader__content {
+    position: relative;
+    width: 200px;
+    height: 200px;
+
+    @media (max-width: 768px) {
+      width: 150px;
+      height: 150px;
+    }
+  }
+
+  .preloader__line {
+    position: absolute;
+    background: $color-primary;
+    box-shadow: $neon-glow-primary;
+    border-radius: 2px;
+    opacity: 0;
+
+    &.preloader__line--1 {
+      width: 100%;
+      height: 2px;
+      top: 0;
+      left: -100%;
+      animation: moveLine1 1.5s ease-in-out infinite;
+    }
+
+    &.preloader__line--2 {
+      width: 2px;
+      height: 100%;
+      top: -100%;
+      right: 0;
+      animation: moveLine2 1.5s ease-in-out infinite 0.25s;
+    }
+
+    &.preloader__line--3 {
+      width: 100%;
+      height: 2px;
+      bottom: 0;
+      right: -100%;
+      animation: moveLine3 1.5s ease-in-out infinite 0.5s;
+    }
+
+    &.preloader__line--4 {
+      width: 2px;
+      height: 100%;
+      bottom: -100%;
+      left: 0;
+      animation: moveLine4 1.5s ease-in-out infinite 0.75s;
+    }
+  }
+
+  .preloader__circle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    background: $color-primary;
+    border-radius: 50%;
+    box-shadow: $neon-glow-primary;
+    animation: pulseCircle 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes moveLine1 {
+  0% {
+    left: -100%;
+    opacity: 0;
+  }
+  50% {
+    left: 0;
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes moveLine2 {
+  0% {
+    top: -100%;
+    opacity: 0;
+  }
+  50% {
+    top: 0;
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes moveLine3 {
+  0% {
+    right: -100%;
+    opacity: 0;
+  }
+  50% {
+    right: 0;
+    opacity: 1;
+  }
+  100% {
+    right: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes moveLine4 {
+  0% {
+    bottom: -100%;
+    opacity: 0;
+  }
+  50% {
+    bottom: 0;
+    opacity: 1;
+  }
+  100% {
+    bottom: 100%;
+    opacity: 0;
+  }
+}
+
+@keyframes pulseCircle {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 1;
+  }
+}

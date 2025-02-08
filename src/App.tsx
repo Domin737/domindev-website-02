@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Header from "./components/layout/Header";
+import Preloader from "./components/layout/Preloader";
 import Footer from "./components/layout/Footer";
 import { ScrollToTop } from "./components/layout/ScrollToTop";
 import Hero from "./components/sections/Hero";
@@ -11,16 +12,26 @@ import Contact from "./components/sections/Contact";
 import "./styles/global.scss";
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     // Dodaj klasę do body dla globalnych stylów
     document.body.classList.add("app");
+
+    // Symulacja ładowania
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2500);
+
     return () => {
       document.body.classList.remove("app");
+      clearTimeout(timer);
     };
   }, []);
 
   return (
     <>
+      <Preloader />
       <Header />
       <main>
         <Hero />
