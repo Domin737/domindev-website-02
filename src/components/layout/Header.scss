@@ -72,7 +72,7 @@
       transform: translateX(-100%);
       background: rgba($color-background-darker, 0.95);
       backdrop-filter: blur(6px);
-      padding: 5rem $spacing-md 2rem;
+      padding: 4rem $spacing-md 2rem;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -94,8 +94,12 @@
     @media (max-width: $breakpoint-md) {
       flex-direction: column;
       align-items: center;
-      gap: $spacing-lg;
-      margin-bottom: auto;
+      gap: $spacing-md;
+      margin-bottom: 2rem;
+
+      li:first-child {
+        padding-top: $spacing-lg;
+      }
     }
   }
 
@@ -106,8 +110,8 @@
       display: flex;
       justify-content: center;
       gap: $spacing-md;
-      margin-top: auto;
-      padding-top: $spacing-md;
+      margin-top: 2rem;
+      padding-top: $spacing-sm;
       border-top: 1px solid rgba($color-secondary, 0.1);
 
       a {
