@@ -3,7 +3,7 @@ import "./ScrollToTop.scss";
 
 export const ScrollToTop = () => {
   const [isVisible, setIsVisible] = useState(false);
-  const HIDE_DELAY = 800; // 0.8 sekundy
+  const HIDE_DELAY = 1500; // 1.5 sekundy
   const SCROLL_THRESHOLD = 200; // próg przewinięcia w pikselach
 
   const hideButton = useCallback(() => {
