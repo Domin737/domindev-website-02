@@ -1,12 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import ThemeToggle from "./ThemeToggle";
 import "./AdminPanel.scss";
 
 const AdminPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
-    <div className="admin-panel">
+    <div className="admin-panel" ref={panelRef}>
       <button
         className={`admin-panel__button ${isOpen ? "active" : ""}`}
         onClick={() => setIsOpen(!isOpen)}

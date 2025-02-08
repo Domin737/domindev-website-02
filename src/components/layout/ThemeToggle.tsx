@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import "./ThemeToggle.scss";
 
 const themes = {
@@ -23,6 +23,23 @@ const themes = {
 const ThemeToggle = () => {
   const [currentTheme, setCurrentTheme] = useState("pink");
   const [isOpen, setIsOpen] = useState(false);
+  const toggleRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        toggleRef.current &&
+        !toggleRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const updateThemeColors = (theme: string) => {
     const colors = themes[theme as keyof typeof themes];
@@ -63,7 +80,7 @@ const ThemeToggle = () => {
   }, []);
 
   return (
-    <div className="theme-toggle">
+    <div className="theme-toggle" ref={toggleRef}>
       <button
         className={`theme-toggle__button ${isOpen ? "active" : ""}`}
         onClick={() => setIsOpen(!isOpen)}
