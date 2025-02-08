@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Header from "./components/layout/Header";
+import ScrollProgress from "./components/layout/ScrollProgress";
 import Preloader from "./components/layout/Preloader";
 import Footer from "./components/layout/Footer";
 import { ScrollToTop } from "./components/layout/ScrollToTop";
@@ -32,6 +33,7 @@ function App() {
 
   return (
     <>
+      <ScrollProgress />
       <Preloader />
       <Header />
       <main>
