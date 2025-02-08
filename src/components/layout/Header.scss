@@ -43,10 +43,9 @@
   &__logo {
     font-size: 1.8rem;
     font-weight: $font-weight-black;
-    color: white;
+    color: $color-text;
     z-index: 2;
-    text-shadow: 0 0 5px rgba(255, 255, 255, 0.4),
-      0 0 10px rgba(255, 255, 255, 0.2);
+    text-shadow: 0 0 5px rgba($color-text, 0.4), 0 0 10px rgba($color-text, 0.2);
     letter-spacing: -0.02em;
     transition: $transition-hover;
     filter: brightness(1.1);
