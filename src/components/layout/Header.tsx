@@ -49,8 +49,8 @@ const Header = () => {
           <img
             src={
               useContext(ThemeContext).theme === "dark"
-                ? "/images/logos/logo-domindev-white-transparentbg-1448x1448.svg"
-                : "/images/logos/logo-domindev-black-transparentbg-1448x1448.svg"
+                ? "/images/logos/logo-domindev-white-transparentbg-362x362.svg"
+                : "/images/logos/logo-domindev-black-transparentbg-362x362.svg"
             }
             alt="DominDev Logo"
             className="header__logo-img"
