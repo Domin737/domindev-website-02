@@ -3,19 +3,19 @@ import "./FontToggle.scss";
 
 const fonts = {
   default: {
-    fontFamily: "'Poppins', sans-serif",
+    fontFamily: "'Inter', sans-serif",
   },
-  roboto: {
-    fontFamily: "'Roboto', sans-serif",
+  jetbrains: {
+    fontFamily: "'JetBrains Mono', monospace",
   },
-  openSans: {
-    fontFamily: "'Open Sans', sans-serif",
+  playfair: {
+    fontFamily: "'Playfair Display', serif",
   },
-  montserrat: {
-    fontFamily: "'Montserrat', sans-serif",
+  pacifico: {
+    fontFamily: "'Pacifico', cursive",
   },
-  lato: {
-    fontFamily: "'Lato', sans-serif",
+  ubuntuMono: {
+    fontFamily: "'Ubuntu Mono', monospace",
   },
 };
 
