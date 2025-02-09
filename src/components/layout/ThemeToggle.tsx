@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
+import { ThemeContext } from "../../App";
 import "./ThemeToggle.scss";
 
 interface ThemeToggleProps {
@@ -7,7 +8,7 @@ interface ThemeToggleProps {
 
 const ThemeToggle = ({ onThemeChange }: ThemeToggleProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isDarkTheme, setIsDarkTheme] = useState(true);
+  const { theme, setTheme } = useContext(ThemeContext);
   const toggleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -26,8 +27,8 @@ const ThemeToggle = ({ onThemeChange }: ThemeToggleProps) => {
     };
   }, []);
 
-  const updateThemeColors = (isDark: boolean) => {
-    if (isDark) {
+  const updateThemeColors = (newTheme: "light" | "dark") => {
+    if (newTheme === "dark") {
       document.documentElement.style.setProperty(
         "--color-background",
         "#0a0a0f"
@@ -66,16 +67,16 @@ const ThemeToggle = ({ onThemeChange }: ThemeToggleProps) => {
     }
   };
 
-  const handleThemeChange = (isDark: boolean) => {
-    setIsDarkTheme(isDark);
-    updateThemeColors(isDark);
+  const handleThemeChange = (newTheme: "light" | "dark") => {
+    setTheme(newTheme);
+    updateThemeColors(newTheme);
     setIsOpen(false);
     onThemeChange?.();
   };
 
   useEffect(() => {
-    updateThemeColors(isDarkTheme);
-  }, []);
+    updateThemeColors(theme);
+  }, [theme]);
 
   return (
     <div className="theme-toggle" ref={toggleRef}>
@@ -107,9 +108,9 @@ const ThemeToggle = ({ onThemeChange }: ThemeToggleProps) => {
       <div className={`theme-toggle__modes ${isOpen ? "active" : ""}`}>
         <button
           className={`theme-toggle__mode-button theme-toggle__mode-button--dark ${
-            isDarkTheme ? "active" : ""
+            theme === "dark" ? "active" : ""
           }`}
-          onClick={() => handleThemeChange(true)}
+          onClick={() => handleThemeChange("dark")}
           aria-label="Tryb ciemny"
         >
           <svg
@@ -126,9 +127,9 @@ const ThemeToggle = ({ onThemeChange }: ThemeToggleProps) => {
         </button>
         <button
           className={`theme-toggle__mode-button theme-toggle__mode-button--light ${
-            !isDarkTheme ? "active" : ""
+            theme === "light" ? "active" : ""
           }`}
-          onClick={() => handleThemeChange(false)}
+          onClick={() => handleThemeChange("light")}
           aria-label="Tryb jasny"
         >
           <svg

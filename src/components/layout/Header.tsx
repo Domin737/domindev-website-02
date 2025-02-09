@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { ThemeContext } from "../../App";
 import { Link } from "react-scroll";
 import { motion, useScroll } from "framer-motion";
 import { FaGithub, FaLinkedin, FaTwitter } from "react-icons/fa";
@@ -45,7 +46,16 @@ const Header = () => {
     <motion.header className={`header ${isScrolled ? "is-scrolled" : ""}`}>
       <div className="container header__grid">
         <Link to="hero" smooth={true} duration={500} className="header__logo">
-          DominDev
+          <img
+            src={
+              useContext(ThemeContext).theme === "dark"
+                ? "/images/logos/logo-domindev-white-transparentbg-1448x1448.svg"
+                : "/images/logos/logo-domindev-black-transparentbg-1448x1448.svg"
+            }
+            alt="DominDev Logo"
+            className="header__logo-img"
+          />
+          <span>DominDev</span>
         </Link>
 
         <nav className={`header__nav ${isOpen ? "is-open" : ""}`}>

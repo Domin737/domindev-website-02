@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import Header from "./components/layout/Header";
 import ScrollProgress from "./components/layout/ScrollProgress";
 import Preloader from "./components/layout/Preloader";
@@ -13,7 +13,18 @@ import FAQ from "./components/sections/FAQ";
 import Contact from "./components/sections/Contact";
 import "./styles/global.scss";
 
+interface ThemeContextType {
+  theme: "light" | "dark";
+  setTheme: (theme: "light" | "dark") => void;
+}
+
+export const ThemeContext = createContext<ThemeContextType>({
+  theme: "dark",
+  setTheme: () => {},
+});
+
 function App() {
+  const [theme, setTheme] = useState<"light" | "dark">("dark");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -32,7 +43,7 @@ function App() {
   }, []);
 
   return (
-    <>
+    <ThemeContext.Provider value={{ theme, setTheme }}>
       <ScrollProgress />
       <Preloader />
       <Header />
@@ -47,7 +58,7 @@ function App() {
       <Footer />
       <AdminPanel />
       <ScrollToTop />
-    </>
+    </ThemeContext.Provider>
   );
 }
 

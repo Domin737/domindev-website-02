@@ -41,6 +41,9 @@
   }
 
   &__logo {
+    display: flex;
+    align-items: center;
+    gap: calc($spacing-sm / 2);
     font-size: 1.8rem;
     font-weight: $font-weight-black;
     color: $color-text;
@@ -50,12 +53,47 @@
     transition: $transition-hover;
     filter: brightness(1.1);
 
+    &-img {
+      height: 40px;
+      width: auto;
+      transition: $transition-hover;
+      filter: brightness(1.2) drop-shadow(0 0 10px rgba(255, 20, 147, 0.5))
+        drop-shadow(0 0 20px rgba(255, 20, 147, 0.3))
+        drop-shadow(0 0 30px rgba(255, 20, 147, 0.1));
+
+      @media (max-width: $breakpoint-md) {
+        height: 32px;
+      }
+
+      @media (max-width: $breakpoint-sm) {
+        height: 28px;
+      }
+    }
+
+    span {
+      display: inline-block;
+    }
+
     &:hover {
       transform: $animation-hover-scale;
+
+      .header__logo-img {
+        transform: $animation-hover-scale;
+        filter: brightness(1.4) drop-shadow(0 0 15px rgba(255, 20, 147, 0.6))
+          drop-shadow(0 0 25px rgba(255, 20, 147, 0.4))
+          drop-shadow(0 0 35px rgba(255, 20, 147, 0.2));
+      }
     }
 
     &:active {
       transform: $animation-click-scale;
+
+      .header__logo-img {
+        transform: $animation-click-scale;
+        filter: brightness(1.3) drop-shadow(0 0 12px rgba(255, 20, 147, 0.55))
+          drop-shadow(0 0 22px rgba(255, 20, 147, 0.35))
+          drop-shadow(0 0 32px rgba(255, 20, 147, 0.15));
+      }
     }
   }
 
