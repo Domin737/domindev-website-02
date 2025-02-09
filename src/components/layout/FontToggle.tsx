@@ -89,16 +89,28 @@ const FontToggle = ({ onFontChange }: FontToggleProps) => {
       </button>
       <div className={`font-toggle__fonts ${isOpen ? "active" : ""}`}>
         {Object.keys(fonts).map((font) => (
-          <button
-            key={font}
-            className={`font-toggle__font-button font-toggle__font-button--${font} ${
-              currentFont === font ? "active" : ""
-            }`}
-            onClick={() => handleFontChange(font)}
-            aria-label={`Zmień czcionkę na ${font}`}
-          >
-            Aa
-          </button>
+          <div key={font} className="font-toggle__font-item">
+            <button
+              className={`font-toggle__font-button font-toggle__font-button--${font} ${
+                currentFont === font ? "active" : ""
+              }`}
+              onClick={() => handleFontChange(font)}
+              aria-label={`Zmień czcionkę na ${font}`}
+            >
+              Aa
+            </button>
+            <span className="font-toggle__tooltip">
+              {font === "default"
+                ? "Inter (Domyślna)"
+                : font === "jetbrains"
+                ? "JetBrains Mono"
+                : font === "playfair"
+                ? "Playfair Display"
+                : font === "pacifico"
+                ? "Pacifico"
+                : "Ubuntu Mono"}
+            </span>
+          </div>
         ))}
       </div>
     </div>

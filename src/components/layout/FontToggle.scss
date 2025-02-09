@@ -66,6 +66,10 @@
     }
   }
 
+  &__font-item {
+    position: relative;
+  }
+
   &__font-button {
     width: 46px;
     height: 42px;
@@ -122,5 +126,29 @@
       opacity: 1;
       box-shadow: $neon-glow-primary;
     }
+  }
+
+  &__tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 6px 10px;
+    background: $color-background-darker;
+    color: $color-text;
+    font-size: 12px;
+    white-space: nowrap;
+    border-radius: 4px;
+    opacity: 0;
+    visibility: hidden;
+    transition: $transition-hover;
+    box-shadow: $neon-glow-primary;
+    pointer-events: none;
+    z-index: calc($z-index-header + 1);
+  }
+
+  &__font-item:hover &__tooltip {
+    opacity: 1;
+    visibility: visible;
   }
 }
