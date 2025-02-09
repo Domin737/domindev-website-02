@@ -39,67 +39,48 @@ const Footer = () => {
               DominDev
             </Link>
             <p className="footer__description">WordPress Development</p>
+            <ul className="footer__social">
+              {socialLinks.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <li key={link.name}>
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={link.name}
+                    >
+                      <Icon />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
 
-          <nav className="footer__nav">
-            <div className="footer__links">
-              <h4>Menu</h4>
-              <ul>
-                {mainLinks.map((link) => (
-                  <li key={link.to}>
-                    <Link
-                      to={link.to}
-                      smooth={true}
-                      duration={500}
-                      offset={-100}
-                    >
-                      {link.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="footer__links">
-              <h4>Dokumenty</h4>
-              <ul>
-                {legalLinks.map((link) => (
-                  <li key={link.name}>
-                    <a href={link.href}>{link.name}</a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="footer__links">
-              <h4>Social Media</h4>
-              <ul className="footer__social">
-                {socialLinks.map((link) => {
-                  const Icon = link.icon;
-                  return (
-                    <li key={link.name}>
-                      <a
-                        href={link.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={link.name}
-                      >
-                        <Icon />
-                      </a>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </nav>
+          <div className="footer__links">
+            <h4>Szybkie linki</h4>
+            <ul>
+              {mainLinks.map((link) => (
+                <li key={link.to}>
+                  <Link to={link.to} smooth={true} duration={500} offset={-100}>
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+              {legalLinks.map((link) => (
+                <li key={link.name}>
+                  <a href={link.href}>{link.name}</a>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <div className="footer__bottom">
           <p>&copy; {currentYear} DominDev. Wszelkie prawa zastrzeżone.</p>
           <div className="footer__contact">
             <a href="mailto:kontakt@domindev.pl">kontakt@domindev.pl</a>
-            <span>|</span>
-            <a href="tel:+48500600700">+48 500 600 700</a>
           </div>
         </div>
       </div>

@@ -6,7 +6,7 @@
     $color-background 0%,
     $color-dark-purple 100%
   );
-  padding: $spacing-xl 0 $spacing-lg;
+  padding: $spacing-md 0;
   position: relative;
   overflow: hidden;
 
@@ -24,14 +24,14 @@
   &__container {
     display: flex;
     flex-direction: column;
-    gap: $spacing-xl;
+    gap: $spacing-md;
     position: relative;
     z-index: 2;
   }
 
   &__main {
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: 1fr 1fr;
     gap: $spacing-lg;
     animation: fadeInUp 1s ease-out;
 
@@ -50,12 +50,11 @@
   &__logo {
     font-size: 1.8rem;
     font-weight: $font-weight-black;
-    background: $gradient-text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: $neon-glow-primary;
+    color: $color-text;
+    text-shadow: 0 0 5px rgba($color-text, 0.4), 0 0 10px rgba($color-text, 0.2);
     letter-spacing: -0.02em;
     transition: $transition-hover;
+    filter: brightness(1.1);
 
     &:hover {
       transform: $animation-hover-scale;
@@ -68,23 +67,17 @@
 
   &__description {
     color: $color-text-secondary;
-    max-width: 300px;
-    line-height: 1.8;
-    font-size: 1rem;
-
-    @media (max-width: $breakpoint-md) {
-      max-width: none;
-    }
+    font-size: 0.9rem;
+    margin-bottom: $spacing-sm;
   }
 
   &__nav {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    display: flex;
     gap: $spacing-lg;
     animation: fadeInUp 1s ease-out 0.2s backwards;
 
     @media (max-width: $breakpoint-sm) {
-      grid-template-columns: 1fr;
+      flex-direction: column;
       gap: $spacing-xl;
       text-align: center;
       padding: $spacing-md 0;
@@ -93,8 +86,8 @@
 
   &__links {
     h4 {
-      font-size: 1.2rem;
-      margin-bottom: $spacing-md;
+      font-size: 1rem;
+      margin-bottom: $spacing-sm;
       background: $gradient-text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -106,7 +99,7 @@
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: $spacing-sm;
+      gap: $spacing-xs;
     }
 
     a {
@@ -150,68 +143,22 @@
   &__social {
     display: flex !important;
     gap: $spacing-md !important;
+    margin-top: $spacing-sm;
 
     @media (max-width: $breakpoint-sm) {
       justify-content: center;
       gap: $spacing-lg !important;
-
-      a {
-        width: 48px;
-        height: 48px;
-
-        i {
-          font-size: 1.5rem;
-        }
-      }
     }
 
     a {
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba($color-background-darker, 0.5);
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba($color-secondary, 0.1);
-      transition: $transition-smooth;
-      clip-path: polygon(20% 0, 100% 0, 80% 100%, 0 100%);
-      position: relative;
-
-      &::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background: $gradient-primary;
-        opacity: 0;
-        transition: $transition-hover;
-        z-index: 1;
-        clip-path: inherit;
-      }
-
-      i {
-        font-size: 1.3rem;
-        background: $gradient-text;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        transition: $transition-hover;
-        position: relative;
-        z-index: 2;
-      }
+      color: $color-text-secondary;
+      font-size: 1.2rem;
+      transition: $transition-hover;
 
       &:hover {
+        color: $color-primary;
         transform: $animation-hover-scale;
-        border-color: rgba($color-secondary, 0.3);
-        box-shadow: $neon-glow-secondary;
-
-        &::before {
-          opacity: 0.1;
-        }
-
-        i {
-          transform: scale(1.1);
-          text-shadow: $neon-glow-primary;
-        }
+        text-shadow: $neon-glow-primary;
       }
 
       &:active {
@@ -224,10 +171,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: $spacing-lg;
+    padding-top: $spacing-md;
     border-top: 1px solid rgba($color-secondary, 0.1);
     color: $color-text-secondary;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     animation: fadeInUp 1s ease-out 0.4s backwards;
 
     @media (max-width: $breakpoint-md) {
@@ -241,7 +188,7 @@
     display: flex;
     align-items: center;
     gap: $spacing-md;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
 
     @media (max-width: $breakpoint-sm) {
       flex-direction: column;
