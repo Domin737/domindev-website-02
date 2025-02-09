@@ -23,6 +23,9 @@
     0 0 20px rgba(255, 20, 147, 0.3), 0 0 30px rgba(255, 20, 147, 0.1);
   --neon-glow-secondary: 0 0 10px rgba(157, 78, 221, 0.5),
     0 0 20px rgba(157, 78, 221, 0.3), 0 0 30px rgba(157, 78, 221, 0.1);
+
+  // Typography
+  --font-primary: "Poppins", sans-serif;
 }
 
 // Theme colors
@@ -48,8 +51,7 @@ $neon-glow-primary: var(--neon-glow-primary);
 $neon-glow-secondary: var(--neon-glow-secondary);
 
 // Typography
-$font-primary: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-  Oxygen, Ubuntu, Cantarell, sans-serif;
+$font-primary: var(--font-primary);
 $font-size-base: 16px;
 $font-size-h1: 4.5rem;
 $font-size-h2: 3.5rem;

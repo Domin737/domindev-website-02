@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import AccentColorToggle from "./AccentColorToggle";
 import ThemeToggle from "./ThemeToggle";
+import FontToggle from "./FontToggle";
 import "./AdminPanel.scss";
 
 const AdminPanel = () => {
@@ -49,6 +50,9 @@ const AdminPanel = () => {
         </div>
         <div className="admin-panel__menu-item">
           <AccentColorToggle onThemeChange={() => setIsOpen(false)} />
+        </div>
+        <div className="admin-panel__menu-item">
+          <FontToggle onFontChange={() => setIsOpen(false)} />
         </div>
       </div>
     </div>
