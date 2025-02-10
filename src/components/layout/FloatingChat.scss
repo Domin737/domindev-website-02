@@ -55,7 +55,7 @@
     bottom: 0;
     right: 60px;
     width: 420px;
-    height: 400px;
+    height: 600px;
     background: var(--color-background-transparent);
     border: 1px solid var(--color-border);
     border-radius: 8px;
@@ -156,7 +156,7 @@
         }
 
         &.bot {
-          background: var(--color-background);
+          background: rgba(var(--color-background-rgb), 0.95);
           color: var(--color-text);
           align-self: flex-start;
           clip-path: polygon(
@@ -172,12 +172,19 @@
 
         &.loading {
           background: transparent;
-          padding: 0;
+          padding: 12px;
           border: none;
+          min-height: 40px;
+          display: flex;
+          align-items: center;
 
           .typing-indicator {
             display: flex;
             gap: 6px;
+            padding: 8px 12px;
+            background: var(--color-background);
+            border: 1px solid var(--color-border);
+            border-radius: 12px;
 
             span {
               width: 8px;
@@ -186,6 +193,7 @@
               border-radius: 50%;
               opacity: 0.5;
               animation: typing 1s infinite ease-in-out;
+              transform-origin: center;
 
               &:nth-child(1) {
                 animation-delay: 0.2s;
@@ -281,13 +289,13 @@
 
 @keyframes typing {
   0% {
-    transform: translateY(0px);
+    transform: translateY(0px) scale(1);
   }
   50% {
-    transform: translateY(-5px);
+    transform: translateY(-5px) scale(1.1);
   }
   100% {
-    transform: translateY(0px);
+    transform: translateY(0px) scale(1);
   }
 }
 
