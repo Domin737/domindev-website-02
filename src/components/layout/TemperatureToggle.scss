@@ -40,8 +40,12 @@
       transition: transform 0.3s ease;
     }
 
-    &.active svg {
-      transform: rotate(180deg);
+    &.active {
+      opacity: 1;
+
+      svg {
+        transform: rotate(-90deg);
+      }
     }
   }
 
@@ -49,66 +53,67 @@
     position: absolute;
     left: 100%;
     top: 50%;
-    transform: translateY(-50%) translateX(-10px);
-    margin-left: 10px;
+    transform: translateY(-50%);
+    margin-left: 12px;
     display: flex;
-    flex-direction: row;
-    gap: 8px;
+    align-items: center;
     opacity: 0;
     pointer-events: none;
     transition: all 0.3s ease;
     z-index: $z-index-header;
-    background: var(--background-color);
+    background: var(--color-background);
     border: 1px solid var(--border-color);
     border-radius: 8px;
-    padding: 8px;
+    padding: 6px 10px;
+    white-space: nowrap;
     min-width: 180px;
 
     &.active {
       opacity: 1;
-      transform: translateY(-50%) translateX(0);
       pointer-events: all;
     }
   }
 
   .temperature-control {
-    width: 100%;
     display: flex;
     align-items: center;
     gap: 12px;
 
     label {
-      flex: 1;
       display: flex;
-      flex-direction: column;
-      gap: 4px;
+      align-items: center;
+      gap: 12px;
 
       .temperature-value {
-        color: var(--text-color);
+        color: var(--color-text);
         font-size: 0.9rem;
         font-weight: 600;
+        min-width: 32px;
         text-align: center;
       }
 
       input[type="range"] {
-        width: 100%;
+        width: 100px;
         height: 4px;
         -webkit-appearance: none;
-        background: var(--border-color);
         border-radius: 2px;
         outline: none;
+        margin: 0 4px;
 
         &::-webkit-slider-thumb {
           -webkit-appearance: none;
           width: 16px;
           height: 16px;
           background: $color-primary;
+          border: 2px solid var(--color-background);
           border-radius: 50%;
           cursor: pointer;
           transition: $transition-smooth;
+          box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+          transform: translateY(-6px);
 
           &:hover {
-            transform: scale(1.1);
+            transform: translateY(-6px) scale(1.1);
             box-shadow: $neon-glow-primary;
           }
         }
@@ -117,15 +122,27 @@
           width: 16px;
           height: 16px;
           background: $color-primary;
-          border: none;
+          border: 2px solid var(--color-background);
           border-radius: 50%;
           cursor: pointer;
           transition: $transition-smooth;
+          box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+          transform: translateY(-6px);
 
           &:hover {
-            transform: scale(1.1);
+            transform: translateY(-6px) scale(1.1);
             box-shadow: $neon-glow-primary;
           }
+        }
+
+        &::-webkit-slider-runnable-track {
+          height: 4px;
+          border-radius: 2px;
+        }
+
+        &::-moz-range-track {
+          height: 4px;
+          border-radius: 2px;
         }
       }
     }
