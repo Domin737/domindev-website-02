@@ -86,52 +86,40 @@
 
   &__links {
     h4 {
-      font-size: 1rem;
-      margin-bottom: $spacing-sm;
+      font-size: 1.2rem; // Zwiększenie rozmiaru czcionki
+      margin-bottom: $spacing-md; // Zwiększenie odstępu
       background: $gradient-text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       font-weight: $font-weight-bold;
       text-shadow: $neon-glow-primary;
+      font-family: $font-primary; // Użycie głównej czcionki
     }
 
     ul {
       list-style: none;
       display: flex;
       flex-direction: column;
-      gap: $spacing-xs;
+      gap: $spacing-sm; // Zwiększenie odstępu
     }
 
     a {
-      color: $color-text-secondary;
+      color: $color-text; // Zwiększenie kontrastu
       transition: $transition-hover;
       font-size: 1rem;
       position: relative;
       padding: $spacing-xs 0;
 
-      &::before {
-        content: "";
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 1px;
-        background: $gradient-primary;
-        transform: scaleX(0);
-        transform-origin: right;
-        transition: transform 0.3s ease;
-        box-shadow: $neon-glow-primary;
-      }
-
       &:hover {
         color: $color-primary;
         text-shadow: $neon-glow-primary;
         transform: $animation-hover-scale;
-
-        &::before {
-          transform: scaleX(1);
-          transform-origin: left;
-        }
+        background-color: rgba(
+          $color-secondary,
+          0.2
+        ); // Dodanie tła po najechaniu
+        border-radius: 4px;
+        padding: $spacing-xs $spacing-sm; // Dodanie paddingu po najechaniu
       }
 
       &:active {
@@ -140,10 +128,14 @@
     }
   }
 
+  &__brand {
+    gap: $spacing-md; // Zwiększenie odstępu
+  }
+
   &__social {
     display: flex !important;
     gap: $spacing-md !important;
-    margin-top: $spacing-sm;
+    margin-top: $spacing-md; // Zwiększenie odstępu
 
     @media (max-width: $breakpoint-sm) {
       justify-content: center;
@@ -179,7 +171,7 @@
 
     @media (max-width: $breakpoint-md) {
       flex-direction: column;
-      gap: $spacing-md;
+      gap: $spacing-lg; // Zwiększenie odstępu
       text-align: center;
     }
   }
