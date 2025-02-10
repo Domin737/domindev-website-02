@@ -22,70 +22,57 @@
     position: fixed;
     left: 30px;
     bottom: 30px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
     opacity: 0.9;
-    transform-origin: center;
-    transition: all 0.15s ease-out;
-
-    @media (max-width: 768px) {
-      left: 50%;
-      transform: translateX(-50%);
-    }
+    transition: opacity 0.3s ease;
 
     &:hover {
       opacity: 1;
+
+      .thunder-path {
+        stroke-dashoffset: 0;
+        opacity: 1;
+      }
     }
   }
 
-  &.preloader--hidden {
-    .preloader__brand {
-      animation: tvTurnOff 0.15s ease-out forwards;
-    }
+  .preloader__brand-container {
+    position: relative;
+    padding: 20px;
   }
 
-  @keyframes tvTurnOff {
-    0% {
-      transform: translateX(-50%) scaleY(1);
-      filter: brightness(1);
-    }
-    60% {
-      transform: translateX(-50%) scaleY(0.01);
-      filter: brightness(2);
-    }
-    100% {
-      transform: translateX(-50%) scaleY(0.001);
-      filter: brightness(0);
-    }
+  .preloader__thunder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
+    pointer-events: none;
+    z-index: 0;
   }
 
-  @media (min-width: 769px) {
-    @keyframes tvTurnOff {
-      0% {
-        transform: scaleY(1);
-        filter: brightness(1);
-      }
-      60% {
-        transform: scaleY(0.01);
-        filter: brightness(2);
-      }
-      100% {
-        transform: scaleY(0.001);
-        filter: brightness(0);
-      }
-    }
+  .thunder-path {
+    stroke: v.$color-primary;
+    stroke-width: 2;
+    stroke-dasharray: 200;
+    stroke-dashoffset: 200;
+    opacity: 0.6;
+    filter: drop-shadow(0 0 5px v.$color-primary);
+    animation: thunderDash 2s ease-in-out infinite;
+  }
+
+  .preloader__brand-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
   }
 
   .preloader__brand-logo {
     width: 48px;
     height: 48px;
-    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
-
-    @media (max-width: 768px) {
-      width: 36px;
-      height: 36px;
-    }
+    filter: drop-shadow(0 0 8px rgba(v.$color-primary, 0.8));
   }
 
   .preloader__brand-name {
@@ -93,10 +80,21 @@
     font-size: 22px;
     font-weight: 500;
     letter-spacing: 0.5px;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 0 0 20px v.$color-primary;
+  }
 
-    @media (max-width: 768px) {
-      font-size: 18px;
+  @keyframes thunderDash {
+    0% {
+      stroke-dashoffset: 200;
+      opacity: 0.2;
+    }
+    50% {
+      stroke-dashoffset: 100;
+      opacity: 1;
+    }
+    100% {
+      stroke-dashoffset: 0;
+      opacity: 0.2;
     }
   }
 
