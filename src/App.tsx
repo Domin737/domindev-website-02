@@ -1,27 +1,20 @@
-import { createContext, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import Header from "./components/layout/Header";
 import ScrollProgress from "./components/layout/ScrollProgress";
 import Preloader from "./components/layout/Preloader";
 import Footer from "./components/layout/Footer";
 import { ScrollToTop } from "./components/layout/ScrollToTop";
 import AdminPanel from "./components/layout/AdminPanel";
-import Hero from "./components/sections/Hero";
-import About from "./components/sections/About";
-import Services from "./components/sections/Services";
-import Portfolio from "./components/sections/Portfolio";
-import FAQ from "./components/sections/FAQ";
-import Contact from "./components/sections/Contact";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import "./styles/global.scss";
 
-interface ThemeContextType {
-  theme: "light" | "dark";
-  setTheme: (theme: "light" | "dark") => void;
-}
-
-export const ThemeContext = createContext<ThemeContextType>({
-  theme: "dark",
-  setTheme: () => {},
-});
+// Lazy load sekcje
+const Hero = lazy(() => import("./components/sections/Hero"));
+const About = lazy(() => import("./components/sections/About"));
+const Services = lazy(() => import("./components/sections/Services"));
+const Portfolio = lazy(() => import("./components/sections/Portfolio"));
+const FAQ = lazy(() => import("./components/sections/FAQ"));
+const Contact = lazy(() => import("./components/sections/Contact"));
 
 function App() {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
@@ -43,22 +36,24 @@ function App() {
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme }}>
+    <ThemeProvider theme={theme} setTheme={setTheme}>
       <ScrollProgress />
-      <Preloader />
+      {isLoading && <Preloader />}
       <Header />
       <main>
-        <Hero />
-        <About />
-        <Services />
-        <Portfolio />
-        <FAQ />
-        <Contact />
+        <Suspense fallback={<div className="section-loader">Ładowanie...</div>}>
+          <Hero />
+          <About />
+          <Services />
+          <Portfolio />
+          <FAQ />
+          <Contact />
+        </Suspense>
       </main>
       <Footer />
       <AdminPanel />
       <ScrollToTop />
-    </ThemeContext.Provider>
+    </ThemeProvider>
   );
 }
 

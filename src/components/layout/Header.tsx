@@ -1,9 +1,54 @@
-import { useState, useEffect, useContext } from "react";
-import { ThemeContext } from "../../App";
+import { useState, useEffect, useContext, memo } from "react";
+import { ThemeContext } from "../../contexts/ThemeContext";
 import { Link } from "react-scroll";
 import { motion, useScroll } from "framer-motion";
 import { FaGithub, FaLinkedin, FaTwitter } from "react-icons/fa";
 import "./Header.scss";
+
+const MENU_ITEMS = [
+  { name: "Home", to: "hero" },
+  { name: "O mnie", to: "about" },
+  { name: "Usługi", to: "services" },
+  { name: "Portfolio", to: "portfolio" },
+  { name: "FAQ", to: "faq" },
+  { name: "Kontakt", to: "contact" },
+] as const;
+
+const SocialLinks = memo(() => (
+  <div className="header__social">
+    <a href="https://github.com" target="_blank" rel="noopener noreferrer">
+      <FaGithub />
+    </a>
+    <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">
+      <FaLinkedin />
+    </a>
+    <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+      <FaTwitter />
+    </a>
+  </div>
+));
+
+SocialLinks.displayName = "SocialLinks";
+
+const MenuItems = memo(({ onItemClick }: { onItemClick: () => void }) => (
+  <ul className="header__menu">
+    {MENU_ITEMS.map((item) => (
+      <li key={item.to} className="header__menu-item">
+        <Link
+          to={item.to}
+          smooth={true}
+          duration={500}
+          offset={-100}
+          onClick={onItemClick}
+        >
+          {item.name}
+        </Link>
+      </li>
+    ))}
+  </ul>
+));
+
+MenuItems.displayName = "MenuItems";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,15 +65,6 @@ const Header = () => {
   }, []);
 
   const toggleMenu = () => setIsOpen(!isOpen);
-
-  const menuItems = [
-    { name: "Home", to: "hero" },
-    { name: "O mnie", to: "about" },
-    { name: "Usługi", to: "services" },
-    { name: "Portfolio", to: "portfolio" },
-    { name: "FAQ", to: "faq" },
-    { name: "Kontakt", to: "contact" },
-  ];
 
   useEffect(() => {
     if (isOpen) {
@@ -59,44 +95,8 @@ const Header = () => {
         </Link>
 
         <nav className={`header__nav ${isOpen ? "is-open" : ""}`}>
-          <ul className="header__menu">
-            {menuItems.map((item) => (
-              <li key={item.to} className="header__menu-item">
-                <Link
-                  to={item.to}
-                  smooth={true}
-                  duration={500}
-                  offset={-100}
-                  onClick={() => setIsOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          <div className="header__social">
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FaGithub />
-            </a>
-            <a
-              href="https://linkedin.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FaLinkedin />
-            </a>
-            <a
-              href="https://twitter.com"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <FaTwitter />
-            </a>
-          </div>
+          <MenuItems onItemClick={() => setIsOpen(false)} />
+          <SocialLinks />
         </nav>
 
         <div className="header__cta">
