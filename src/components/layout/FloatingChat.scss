@@ -52,9 +52,9 @@
 
   .chat-window {
     position: absolute;
-    bottom: 60px;
-    right: 0;
-    width: 300px;
+    bottom: 0;
+    right: 60px;
+    width: 420px;
     height: 400px;
     background: var(--color-background-transparent);
     border: 1px solid var(--color-border);
@@ -275,11 +275,12 @@
   .floating-chat {
     .chat-window {
       position: fixed;
-      bottom: 80px;
+      bottom: 124px; // Wyżej niż ScrollToTop (72px) + margines
       right: 10px;
       left: 10px;
       width: auto;
       max-width: none;
+      height: 520px;
     }
   }
 }
