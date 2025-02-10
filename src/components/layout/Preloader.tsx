@@ -21,6 +21,14 @@ const Preloader = () => {
         <div className="preloader__line preloader__line--4"></div>
         <div className="preloader__circle"></div>
       </div>
+      <div className="preloader__brand">
+        <img
+          src="/images/logos/logo-domindev-white-transparentbg-724x724.svg"
+          alt="DominDev Logo"
+          className="preloader__brand-logo"
+        />
+        <span className="preloader__brand-name">DominDev</span>
+      </div>
     </div>
   );
 };
