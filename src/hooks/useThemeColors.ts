@@ -35,10 +35,12 @@ const themeColorMap: Record<ThemeType, ThemeColors> = {
 
 export const useThemeColors = (theme: ThemeType) => {
   useEffect(() => {
-    const colors = themeColorMap[theme];
+    const root = document.documentElement;
+    root.setAttribute("data-theme", theme);
 
+    const colors = themeColorMap[theme];
     Object.entries(colors).forEach(([key, value]) => {
-      document.documentElement.style.setProperty(
+      root.style.setProperty(
         `--color-${key.replace(/([A-Z])/g, "-$1").toLowerCase()}`,
         value
       );

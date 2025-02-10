@@ -1,12 +1,23 @@
 :root {
-  // Theme colors
+  // Theme colors - Dark Mode (default)
   --color-background: #0a0a0f;
   --color-background-darker: #050508;
   --color-text: #ffffff;
   --color-text-secondary: rgba(255, 255, 255, 0.8);
   --color-dark-purple: #1a0b2e;
   --background-color-transparent: rgba(10, 10, 15, 0.95);
-  --chat-message-background: rgba(5, 5, 8, 0.95);
+  --chat-message-background: rgba(26, 11, 46, 0.95);
+
+  &[data-theme="light"] {
+    // Theme colors - Light Mode
+    --color-background: #ffffff;
+    --color-background-darker: #f5f5f5;
+    --color-text: #0a0a0f;
+    --color-text-secondary: rgba(10, 10, 15, 0.8);
+    --color-dark-purple: #f0e6ff;
+    --background-color-transparent: rgba(255, 255, 255, 0.95);
+    --chat-message-background: rgba(240, 230, 255, 0.95);
+  }
 
   // Colors
   --color-primary: #ff1493;

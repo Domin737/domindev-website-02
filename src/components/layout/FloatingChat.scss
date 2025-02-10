@@ -163,7 +163,7 @@
         }
 
         &.bot {
-          background: rgba(var(--color-background-rgb), 0.95);
+          background: var(--chat-message-background);
           color: var(--color-text);
           align-self: flex-start;
           clip-path: polygon(
@@ -175,6 +175,8 @@
             0 10px
           );
           border: 1px solid var(--color-border);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+          backdrop-filter: blur(8px);
         }
 
         &.loading {
@@ -311,12 +313,42 @@
   .floating-chat {
     .chat-window {
       position: fixed;
-      bottom: 124px; // Wyżej niż ScrollToTop (72px) + margines
+      bottom: 124px; // 72px (ScrollToTop) + 52px (taka sama odległość jak ScrollToTop od FloatingChat)
       right: 10px;
       left: 10px;
       width: auto;
       max-width: none;
-      height: 520px;
+      height: calc(
+        100vh - 224px
+      ); // 100vh - (nawigacja + dolny margines + ScrollToTop + odstęp)
+      min-height: 300px;
+      max-height: 520px;
+
+      .chat-input-form {
+        padding: 12px;
+        gap: 8px;
+
+        input {
+          padding: 8px 12px;
+          font-size: 0.9rem;
+        }
+
+        button {
+          padding: 8px;
+          min-width: 60px;
+          white-space: nowrap;
+        }
+      }
+    }
+  }
+}
+
+// Dodatkowe dostosowanie dla bardzo małych ekranów
+@media (max-width: 768px) and (max-height: 600px) {
+  .floating-chat {
+    .chat-window {
+      bottom: 104px; // Mniejszy odstęp na małych ekranach
+      height: calc(100vh - 220px); // Mniejsza wysokość dla małych ekranów
     }
   }
 }
