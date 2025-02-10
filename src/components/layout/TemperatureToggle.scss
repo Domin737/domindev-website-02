@@ -1,0 +1,171 @@
+@use "../../styles/variables" as *;
+
+.temperature-toggle {
+  &__button {
+    background: $color-primary;
+    color: white;
+    width: 46px;
+    height: 42px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: $transition-smooth;
+    opacity: 0.6;
+    clip-path: polygon(
+      15px 0,
+      100% 0,
+      100% calc(100% - 15px),
+      calc(100% - 15px) 100%,
+      0 100%,
+      0 15px
+    );
+    border-radius: 4px;
+
+    &:hover {
+      opacity: 0.8;
+      box-shadow: $neon-glow-primary;
+      transform: $animation-hover-scale;
+    }
+
+    &:active {
+      transform: $animation-click-scale;
+    }
+
+    svg {
+      width: 24px;
+      height: 24px;
+      transition: transform 0.3s ease;
+    }
+
+    &.active svg {
+      transform: rotate(180deg);
+    }
+  }
+
+  &__controls {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%) translateX(-10px);
+    margin-left: 10px;
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s ease;
+    z-index: $z-index-header;
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px;
+    min-width: 180px;
+
+    &.active {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+      pointer-events: all;
+    }
+  }
+
+  .temperature-control {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    label {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+      .temperature-value {
+        color: var(--text-color);
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-align: center;
+      }
+
+      input[type="range"] {
+        width: 100%;
+        height: 4px;
+        -webkit-appearance: none;
+        background: var(--border-color);
+        border-radius: 2px;
+        outline: none;
+
+        &::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          width: 16px;
+          height: 16px;
+          background: $color-primary;
+          border-radius: 50%;
+          cursor: pointer;
+          transition: $transition-smooth;
+
+          &:hover {
+            transform: scale(1.1);
+            box-shadow: $neon-glow-primary;
+          }
+        }
+
+        &::-moz-range-thumb {
+          width: 16px;
+          height: 16px;
+          background: $color-primary;
+          border: none;
+          border-radius: 50%;
+          cursor: pointer;
+          transition: $transition-smooth;
+
+          &:hover {
+            transform: scale(1.1);
+            box-shadow: $neon-glow-primary;
+          }
+        }
+      }
+    }
+
+    .save-button {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      background: $color-primary;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: $transition-smooth;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      clip-path: polygon(
+        8px 0,
+        100% 0,
+        100% calc(100% - 8px),
+        calc(100% - 8px) 100%,
+        0 100%,
+        0 8px
+      );
+
+      &:hover:not(:disabled) {
+        transform: $animation-hover-scale;
+        box-shadow: $neon-glow-primary;
+      }
+
+      &:active:not(:disabled) {
+        transform: $animation-click-scale;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+    }
+  }
+}
