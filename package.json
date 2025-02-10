@@ -11,6 +11,11 @@
     "backup": "node backup.js"
   },
   "dependencies": {
+    "@langchain/community": "^0.3.29",
+    "@langchain/core": "^0.3.39",
+    "@langchain/openai": "^0.4.3",
+    "@types/axios": "^0.9.36",
+    "axios": "^1.7.9",
     "framer-motion": "^12.4.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

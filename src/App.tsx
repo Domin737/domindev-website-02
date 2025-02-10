@@ -5,6 +5,7 @@ import Preloader from "./components/layout/Preloader";
 import Footer from "./components/layout/Footer";
 import { ScrollToTop } from "./components/layout/ScrollToTop";
 import AdminPanel from "./components/layout/AdminPanel";
+import FloatingChat from "./components/layout/FloatingChat";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./styles/global.scss";
 
@@ -35,6 +36,10 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
+
   return (
     <ThemeProvider theme={theme} setTheme={setTheme}>
       <ScrollProgress />
@@ -52,6 +57,7 @@ function App() {
       </main>
       <Footer />
       <AdminPanel />
+      <FloatingChat />
       <ScrollToTop />
     </ThemeProvider>
   );
