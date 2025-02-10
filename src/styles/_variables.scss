@@ -9,6 +9,7 @@
   // Colors
   --color-primary: #ff1493;
   --color-secondary: #9d4edd;
+  --color-error: #ff3333;
   --gradient-primary: linear-gradient(
     135deg,
     var(--color-primary) 0%,
@@ -36,6 +37,7 @@ $color-text-secondary: var(--color-text-secondary);
 $color-dark-purple: var(--color-dark-purple);
 $color-primary: var(--color-primary);
 $color-secondary: var(--color-secondary);
+$color-error: var(--color-error);
 
 // Gradients
 $gradient-primary: var(--gradient-primary);

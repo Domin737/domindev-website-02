@@ -64,58 +64,76 @@
       transform: translateY(-50%) translateX(0);
       pointer-events: all;
     }
-  }
 
-  &__mode-button {
-    width: 46px;
-    height: 42px;
-    border: none;
-    cursor: pointer;
-    clip-path: polygon(
-      15px 0,
-      100% 0,
-      100% calc(100% - 15px),
-      calc(100% - 15px) 100%,
-      0 100%,
-      0 15px
-    );
-    border-radius: 4px;
-    transition: $transition-hover;
-    opacity: 0.6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    .theme-toggle__mode-button {
+      width: 46px;
+      height: 42px;
+      border: none;
+      cursor: pointer;
+      clip-path: polygon(
+        15px 0,
+        100% 0,
+        100% calc(100% - 15px),
+        calc(100% - 15px) 100%,
+        0 100%,
+        0 15px
+      );
+      border-radius: 4px;
+      transition: $transition-hover;
+      opacity: 0.6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba($color-secondary, 0.1);
 
-    svg {
-      width: 24px;
-      height: 24px;
-      color: white;
-    }
-
-    &:hover {
-      opacity: 0.8;
-      transform: $animation-hover-scale;
-      box-shadow: $neon-glow-primary;
-    }
-
-    &:active {
-      transform: $animation-click-scale;
-    }
-
-    &--dark {
-      background: linear-gradient(135deg, #0a0a0f 0%, #1a0b2e 100%);
-    }
-
-    &--light {
-      background: linear-gradient(135deg, #ffffff 0%, #f0e6ff 100%);
       svg {
-        color: #0a0a0f;
+        width: 24px;
+        height: 24px;
+        color: currentColor;
       }
-    }
 
-    &.active {
-      opacity: 1;
-      box-shadow: $neon-glow-primary;
+      &:hover {
+        opacity: 0.8;
+        transform: $animation-hover-scale;
+        box-shadow: $neon-glow-primary;
+        border-color: rgba($color-secondary, 0.3);
+      }
+
+      &:active {
+        transform: $animation-click-scale;
+      }
+
+      // Przycisk ciemnego motywu
+      &--dark {
+        background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+        color: #e0e0e0;
+
+        &.active {
+          opacity: 1;
+          background: linear-gradient(135deg, #1a1a1a 0%, #2c3e50 100%);
+          box-shadow: 0 0 15px rgba(44, 62, 80, 0.5);
+        }
+
+        &:hover {
+          box-shadow: 0 0 15px rgba(44, 62, 80, 0.3);
+        }
+      }
+
+      // Przycisk jasnego motywu
+      &--light {
+        background: linear-gradient(135deg, #f5d76e 0%, #f4b350 100%);
+        color: #2c3e50;
+
+        &.active {
+          opacity: 1;
+          background: linear-gradient(135deg, #f7e6b5 0%, #f5d76e 100%);
+          box-shadow: 0 0 15px rgba(245, 215, 110, 0.5);
+        }
+
+        &:hover {
+          box-shadow: 0 0 15px rgba(245, 215, 110, 0.3);
+        }
+      }
     }
   }
 }

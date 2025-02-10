@@ -104,12 +104,34 @@
     width: 100%;
     height: 100%;
     overflow: hidden;
+    position: relative;
+
+    &-loader,
+    &-error {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba($color-background-darker, 0.85);
+      color: $color-text;
+      font-size: $font-size-base;
+      z-index: 1;
+    }
+
+    &-error {
+      color: $color-error;
+    }
 
     img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       transition: $transition-smooth;
+      opacity: 0;
+      &[src] {
+        opacity: 1;
+      }
     }
   }
 
