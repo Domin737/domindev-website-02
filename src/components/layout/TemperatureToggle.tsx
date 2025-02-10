@@ -78,33 +78,41 @@ const TemperatureToggle = ({ onTemperatureChange }: TemperatureToggleProps) => {
       {isOpen && (
         <div className="temperature-toggle__controls active">
           <div className="temperature-control">
-            <label>
-              <span className="temperature-value">
-                {temperature.toFixed(1)}
-              </span>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={temperature}
-                onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                style={{
-                  background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${
-                    temperature * 100
-                  }%, var(--color-background-darker) ${
-                    temperature * 100
-                  }%, var(--color-background-darker) 100%)`,
-                }}
-              />
-            </label>
-            <button
-              onClick={updateTemperature}
-              disabled={isSaving}
-              className="save-button"
-            >
-              {isSaving ? "..." : "✓"}
-            </button>
+            <div className="temperature-toggle__tooltip">
+              Temperatura określa kreatywność i nieprzewidywalność odpowiedzi
+              AI. Wyższa wartość (np. 0.8) zwiększa kreatywność, ale może
+              prowadzić do mniej spójnych odpowiedzi. Niższa wartość (np. 0.2)
+              zapewnia bardziej przewidywalne i konkretne odpowiedzi.
+            </div>
+            <div className="temperature-control__inputs">
+              <label>
+                <span className="temperature-value">
+                  {temperature.toFixed(1)}
+                </span>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={temperature}
+                  onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                  style={{
+                    background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${
+                      temperature * 100
+                    }%, var(--color-background-darker) ${
+                      temperature * 100
+                    }%, var(--color-background-darker) 100%)`,
+                  }}
+                />
+              </label>
+              <button
+                onClick={updateTemperature}
+                disabled={isSaving}
+                className="save-button"
+              >
+                {isSaving ? "..." : "✓"}
+              </button>
+            </div>
           </div>
         </div>
       )}

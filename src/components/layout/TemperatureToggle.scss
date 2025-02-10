@@ -55,18 +55,10 @@
     top: 50%;
     transform: translateY(-50%);
     margin-left: 12px;
-    display: flex;
-    align-items: center;
     opacity: 0;
     pointer-events: none;
     transition: all 0.3s ease;
     z-index: $z-index-header;
-    background: var(--color-background);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 6px 10px;
-    white-space: nowrap;
-    min-width: 180px;
 
     &.active {
       opacity: 1;
@@ -74,10 +66,35 @@
     }
   }
 
+  &__tooltip {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    left: 0;
+    right: 0;
+    color: var(--color-text);
+    font-size: 13px;
+    line-height: 1.4;
+    padding: 8px 12px;
+    background: var(--color-background-darker);
+    border-radius: 6px;
+    box-shadow: $neon-glow-primary;
+    margin-bottom: 4px;
+  }
+
   .temperature-control {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+    background: var(--color-background);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    white-space: normal;
+    min-width: 280px;
+    position: relative;
+
+    &__inputs {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
     label {
       display: flex;
