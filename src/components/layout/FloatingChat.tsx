@@ -20,6 +20,24 @@ const FloatingChat = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isOpen &&
+        chatRef.current &&
+        !chatRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -61,7 +79,7 @@ const FloatingChat = () => {
   };
 
   return (
-    <div className={`floating-chat ${isOpen ? "open" : ""}`}>
+    <div className={`floating-chat ${isOpen ? "open" : ""}`} ref={chatRef}>
       <button
         className="floating-chat-toggle"
         onClick={() => setIsOpen(!isOpen)}
