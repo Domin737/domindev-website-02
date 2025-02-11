@@ -2,6 +2,10 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { ChatOpenAI } from "@langchain/openai";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
+import { body, validationResult } from "express-validator";
+import slowDown from "express-slow-down";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { BufferMemory } from "langchain/memory";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
@@ -12,8 +16,39 @@ import {
 } from "@langchain/core/prompts";
 
 const app = express();
+
+// Podstawowe zabezpieczenia HTTP
+app.use(helmet());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: "100kb" })); // Limit wielkości żądań
+
+// Rate limiting dla wszystkich endpointów
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minut
+  max: 50, // zmniejszony limit do 50 żądań na okno czasowe
+  message: "Przekroczono limit zapytań. Spróbuj ponownie później.",
+  standardHeaders: true, // Dodaj nagłówki Rate-Limit do odpowiedzi
+  legacyHeaders: false, // Wyłącz przestarzałe nagłówki X-RateLimit
+});
+
+// Bardziej restrykcyjny limit dla endpointu konfiguracyjnego
+const configLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 godzina
+  max: 10, // limit 10 żądań na godzinę
+  message: "Przekroczono limit prób aktualizacji konfiguracji.",
+});
+
+// Spowalniacz dla częstych żądań
+const speedLimiter = slowDown({
+  windowMs: 15 * 60 * 1000, // 15 minut
+  delayAfter: 30, // zacznij spowalniać po 30 żądaniach
+  delayMs: (hits) => hits * 200, // zwiększaj opóźnienie o 200ms dla każdego żądania
+  maxDelayMs: 2000, // maksymalne opóźnienie 2 sekundy
+});
+
+// Zastosuj limitery do wszystkich endpointów
+app.use(limiter);
+app.use(speedLimiter);
 
 let chatbotConfig = {
   temperature: 0.5,
@@ -94,7 +129,23 @@ const countTokens = (text) => {
   return Math.ceil(text.length / 4);
 };
 
-app.post("/chat", async (req, res) => {
+// Walidacja danych dla endpointu chat
+const validateChatInput = [
+  body("message")
+    .trim()
+    .notEmpty()
+    .withMessage("Wiadomość nie może być pusta")
+    .isLength({ max: 1000 })
+    .withMessage("Wiadomość jest zbyt długa")
+    .escape(),
+];
+
+app.post("/chat", validateChatInput, async (req, res) => {
+  // Sprawdź błędy walidacji
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
   try {
     const { message } = req.body;
     conversationStats.messageCount++;
@@ -173,37 +224,55 @@ app.post("/chat", async (req, res) => {
   }
 });
 
-app.post("/update-config", (req, res) => {
-  try {
-    const { temperature } = req.body;
-    if (typeof temperature !== "number" || temperature < 0 || temperature > 1) {
-      return res.status(400).json({
-        error:
-          "Nieprawidłowa wartość temperatury. Wartość musi być między 0 a 1.",
+app.post(
+  "/update-config",
+  configLimiter,
+  [
+    body("temperature")
+      .isFloat({ min: 0, max: 1 })
+      .withMessage("Temperatura musi być wartością między 0 a 1"),
+  ],
+  (req, res) => {
+    // Sprawdź błędy walidacji
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    try {
+      const { temperature } = req.body;
+      if (
+        typeof temperature !== "number" ||
+        temperature < 0 ||
+        temperature > 1
+      ) {
+        return res.status(400).json({
+          error:
+            "Nieprawidłowa wartość temperatury. Wartość musi być między 0 a 1.",
+        });
+      }
+
+      chatbotConfig.temperature = temperature;
+
+      // Aktualizacja modelu
+      global.model = new ChatOpenAI({
+        openAIApiKey: process.env.OPENAI_API_KEY,
+        temperature: chatbotConfig.temperature,
+        modelName: "gpt-4-turbo-preview",
+      });
+
+      res.json({
+        message: "Zaktualizowano konfigurację",
+        newConfig: chatbotConfig,
+      });
+    } catch (error) {
+      console.error("Błąd podczas aktualizacji konfiguracji:", error);
+      res.status(500).json({
+        error: "Wystąpił błąd podczas aktualizacji konfiguracji",
+        details: error.message,
       });
     }
-
-    chatbotConfig.temperature = temperature;
-
-    // Aktualizacja modelu
-    global.model = new ChatOpenAI({
-      openAIApiKey: process.env.OPENAI_API_KEY,
-      temperature: chatbotConfig.temperature,
-      modelName: "gpt-4-turbo-preview",
-    });
-
-    res.json({
-      message: "Zaktualizowano konfigurację",
-      newConfig: chatbotConfig,
-    });
-  } catch (error) {
-    console.error("Błąd podczas aktualizacji konfiguracji:", error);
-    res.status(500).json({
-      error: "Wystąpił błąd podczas aktualizacji konfiguracji",
-      details: error.message,
-    });
   }
-});
+);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
