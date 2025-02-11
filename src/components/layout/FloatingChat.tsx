@@ -138,7 +138,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
   const [currentStreamedResponse, setCurrentStreamedResponse] = useState("");
 
   // Funkcja do wysyłania wiadomości i obsługi odpowiedzi
-  const handleMessageSend = async (message: string) => {
+  const handleMessageSend = async (message: string, fromSuggestion = false) => {
     resetInactivityTimer();
 
     // Dodaj wiadomość użytkownika
@@ -146,6 +146,11 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
     setIsLoading(true);
     setShowLongLoadingMessage(false);
     setCurrentStreamedResponse("");
+
+    // Jeśli wiadomość pochodzi z sugestii, ukryj panel sugestii
+    if (fromSuggestion) {
+      setShowSuggestions(false);
+    }
 
     // Timer dla długich odpowiedzi
     loadingTimerRef.current = setTimeout(() => {
@@ -310,7 +315,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
                     <button
                       key={index}
                       className="suggested-question"
-                      onClick={() => handleMessageSend(fq.question)}
+                      onClick={() => handleMessageSend(fq.question, true)}
                     >
                       {capitalizeFirstLetter(fq.question)}
                     </button>
