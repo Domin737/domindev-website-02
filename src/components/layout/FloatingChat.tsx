@@ -280,12 +280,20 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
                   <span></span>
                   <span></span>
                 </div>
-                {showLongLoadingMessage && (
-                  <div className="long-loading-message">
-                    Proszę o cierpliwość. Odpowiedź jest obszerna i wymaga
-                    więcej czasu...
+              </div>
+            )}
+            {isLoading && showLongLoadingMessage && (
+              <div className="message bot loading-status">
+                <div className="long-loading-message">
+                  <div className="loading-icon">⏳</div>
+                  <div className="loading-text">
+                    Generuję obszerną odpowiedź...
+                    <br />
+                    <span className="loading-subtext">
+                      To może potrwać kilka sekund
+                    </span>
                   </div>
-                )}
+                </div>
               </div>
             )}
           </div>
