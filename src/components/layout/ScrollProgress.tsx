@@ -10,8 +10,6 @@ const ScrollProgress = () => {
       const winHeightPx =
         document.documentElement.scrollHeight -
         document.documentElement.clientHeight;
-      const scrolled = `${(scrollPx / winHeightPx) * 100}%`;
-
       setScrollProgress(Number((scrollPx / winHeightPx) * 100));
     };
 

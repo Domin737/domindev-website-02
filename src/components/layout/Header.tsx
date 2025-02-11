@@ -52,7 +52,7 @@ MenuItems.displayName = "MenuItems";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { scrollY } = useScroll();
+  useScroll(); // zachowujemy hook dla przyszłego użycia
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {

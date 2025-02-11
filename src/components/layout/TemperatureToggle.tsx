@@ -8,7 +8,9 @@ import "./TemperatureToggle.scss";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
-interface TemperatureToggleProps {}
+interface TemperatureToggleProps {
+  onTemperatureChange?: () => void;
+}
 
 const ThermometerIcon: FC = () => (
   <svg
@@ -26,7 +28,9 @@ const ThermometerIcon: FC = () => (
   </svg>
 );
 
-const TemperatureToggle = ({}: TemperatureToggleProps) => {
+const TemperatureToggle = ({
+  onTemperatureChange: propOnTemperatureChange,
+}: TemperatureToggleProps) => {
   const { theme } = useContext(ThemeContext);
   useThemeColors(theme);
   const { temperature, setTemperature, onTemperatureChange } = useTemperature();
@@ -62,7 +66,8 @@ const TemperatureToggle = ({}: TemperatureToggleProps) => {
         id: "temperature-update",
       });
       setIsOpen(false); // Zamknij panel po zapisaniu
-      onTemperatureChange(); // Wywołaj funkcję zmiany temperatury
+      onTemperatureChange(); // Wywołaj funkcję zmiany temperatury z kontekstu
+      propOnTemperatureChange?.(); // Wywołaj funkcję zmiany temperatury z propsów, jeśli istnieje
     } catch (error) {
       console.error("Błąd podczas aktualizacji temperatury:", error);
       toast.error("Błąd podczas aktualizacji temperatury", {
