@@ -133,11 +133,12 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
     };
   }, []);
 
+  const [currentStreamedResponse, setCurrentStreamedResponse] = useState("");
+
   const sendMessage = async () => {
     if (!input.trim()) return;
     resetInactivityTimer();
 
-    // Zabezpieczenie przed race condition - zapisanie aktualnej wartości input
     const currentInput = input.trim();
     const userMessage = { text: currentInput, user: "Ty" };
 
@@ -145,8 +146,9 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
     setIsLoading(true);
     setShowLongLoadingMessage(false);
     setInput("");
+    setCurrentStreamedResponse("");
 
-    // Ustawienie timera na 10 sekund
+    // Ustawienie timera na 10 sekund dla długich odpowiedzi
     loadingTimerRef.current = setTimeout(() => {
       setShowLongLoadingMessage(true);
     }, 10000);
@@ -155,6 +157,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
       const response = await axios.post<ChatResponse>(`${API_URL}/chat`, {
         message: currentInput,
       });
+
       setMessages((prev) => [
         ...prev,
         { text: response.data.reply, user: "Bot" },

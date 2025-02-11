@@ -9,8 +9,7 @@ import helmet from "helmet";
 import { body, validationResult } from "express-validator";
 import slowDown from "express-slow-down";
 import { RunnableSequence } from "@langchain/core/runnables";
-import { BufferMemory } from "langchain/memory";
-import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import { AIMessage } from "@langchain/core/messages";
 import {
   ChatPromptTemplate,
   SystemMessagePromptTemplate,
@@ -103,17 +102,29 @@ const db = mongoClient.db("chatbot");
 const questionsCollection = db.collection("frequent_questions");
 const bannedWordsCollection = db.collection("banned_words");
 
-// Funkcja do pobierania zabronionych słów z bazy
+// Cache dla zabronionych słów
+let bannedWordsCache = [];
+let bannedWordsCacheTime = 0;
+const BANNED_WORDS_CACHE_TTL = 5 * 60 * 1000; // 5 minut
+
+// Funkcja do pobierania zabronionych słów z cache lub bazy
 const getBannedWords = async () => {
+  const now = Date.now();
+  if (now - bannedWordsCacheTime < BANNED_WORDS_CACHE_TTL) {
+    return bannedWordsCache;
+  }
+
   try {
     const words = await bannedWordsCollection.find({}).toArray();
-    return words.map((w) => w.word);
+    bannedWordsCache = words.map((w) => w.word);
+    bannedWordsCacheTime = now;
+    return bannedWordsCache;
   } catch (error) {
     console.error(
       "[MongoDB]: Błąd podczas pobierania zabronionych słów:",
       error
     );
-    return [];
+    return bannedWordsCache; // Użyj cache w przypadku błędu
   }
 };
 
@@ -123,6 +134,11 @@ const containsBannedWords = async (text) => {
   const normalizedText = text.toLowerCase();
   return bannedWords.some((word) => normalizedText.includes(word));
 };
+
+// Odśwież cache zabronionych słów przy starcie
+getBannedWords().then(() => {
+  console.log("[Cache]: Zainicjalizowano cache zabronionych słów");
+});
 
 // Funkcja do filtrowania pytań
 const isQuestionAppropriate = async (question) => {
@@ -192,15 +208,20 @@ const checkCache = async (question) => {
   const normalizedQuestion = normalizeQuestion(question);
   const cached = await redisClient.get(`q:${normalizedQuestion}`);
   if (cached) {
-    // Aktualizuj licznik użyć w MongoDB
-    await questionsCollection.updateOne(
-      { question: normalizedQuestion },
-      {
-        $inc: { useCount: 1 },
-        $set: { lastUsed: new Date() },
-      },
-      { upsert: true }
-    );
+    // Aktualizuj licznik użyć w MongoDB asynchronicznie, nie czekając na wynik
+    questionsCollection
+      .updateOne(
+        { question: normalizedQuestion },
+        {
+          $inc: { useCount: 1 },
+          $set: { lastUsed: new Date() },
+        },
+        { upsert: true }
+      )
+      .catch((err) =>
+        console.error("[MongoDB]: Błąd aktualizacji statystyk:", err)
+      );
+
     return JSON.parse(cached);
   }
   return null;
@@ -219,18 +240,20 @@ const saveToCache = async (question, answer) => {
       JSON.stringify(answer)
     );
 
-    // Zapisz/zaktualizuj w MongoDB
-    await questionsCollection.updateOne(
-      { question: normalizedQuestion },
-      {
-        $inc: { useCount: 1 },
-        $set: {
-          answer,
-          lastUsed: new Date(),
+    // Zapisz/zaktualizuj w MongoDB asynchronicznie
+    questionsCollection
+      .updateOne(
+        { question: normalizedQuestion },
+        {
+          $inc: { useCount: 1 },
+          $set: {
+            answer,
+            lastUsed: new Date(),
+          },
         },
-      },
-      { upsert: true }
-    );
+        { upsert: true }
+      )
+      .catch((err) => console.error("[MongoDB]: Błąd zapisu statystyk:", err));
   } else {
     console.log(
       "\x1b[33m%s\x1b[0m",
@@ -249,7 +272,7 @@ const saveToCache = async (question, answer) => {
 
 let chatbotConfig = {
   temperature: 0.5,
-  max_tokens: 500, // Zoptymalizowany limit tokenów dla zwięzłych odpowiedzi
+  max_tokens: 800, // Zwiększony limit tokenów dla pełniejszych odpowiedzi
 };
 
 let conversationStats = {
@@ -259,63 +282,29 @@ let conversationStats = {
 // Tworzenie szablonu promptu
 const chatPrompt = ChatPromptTemplate.fromPromptMessages([
   SystemMessagePromptTemplate.fromTemplate(
-    `Jesteś przyjaznym asystentem DominDev - firmy specjalizującej się w tworzeniu i redesignie stron WordPress, sklepów WooCommerce, integracji wtyczek, optymalizacji SEO i marketingu online.
-    
-    Odpowiadasz TYLKO na pytania dotyczące:
-    - Tworzenia i modyfikowania stron WordPress (w tym konfiguracja wtyczek, dostosowywanie szablonów)
-    - Pisania „dedykowanego" (custom) kodu i wdrażania niestandardowych rozwiązań
-    - Implementacji i optymalizacji WooCommerce
-    - Analizy istniejących stron i poprawy ich funkcjonalności
-    - SEO, integracji zewnętrznych systemów (CRM, ERP, płatności)
-    - UX/UI, marketingu online i brandingu
-    - Utrzymania stron, doradztwa w zakresie hostingu i abonamentowej opieki
-    - Generowania obrazów przy pomocy AI
-    - Wsparcia i współpracy z DominDev
-    - Narzędzi i rekomendacji technologicznych (CMS, wtyczki, frameworki)
-    - Ciekawostek i informacji o DominDev
-    - Implementacji i aktualizacji konfiguracji chatbota
-    - Innych pytań związanych z technologią i stronami internetowymi
+    `Asystent DominDev - WordPress, WooCommerce, SEO, marketing online.
 
-    ZASADY FORMATOWANIA:
-    1. Używaj Markdown do formatowania odpowiedzi:
-       - **Pogrubienie** dla słów kluczowych i ważnych terminów
-       - _Kursywa_ dla podkreślenia znaczenia
-       - \`kod\` dla nazw technologii, funkcji, komend
-       - Listy punktowane dla wyliczania opcji
-       - ### dla nagłówków sekcji (jeśli potrzebne)
-    
-    2. Struktura odpowiedzi:
-       - Zacznij od najważniejszej informacji
-       - Używaj krótkich akapitów (2-3 zdania)
-       - Grupuj powiązane informacje
-       - Końcowe zdanie powinno być podsumowaniem lub zachętą do działania
+    Zakres: WordPress, custom kod, WooCommerce, SEO, CRM/ERP, UX/UI, hosting, AI, technologie webowe.
 
-    WAŻNE ZASADY:
-    - Odpowiadaj BARDZO zwięźle i konkretnie, maksymalnie 3-4 zdania na punkt
-    - Ogranicz odpowiedź do maksymalnie 5-6 najważniejszych punktów
-    - Unikaj rozbudowanych wyjaśnień i przykładów
-    - Skup się tylko na kluczowych informacjach
-    - Jeśli pytanie jest bardzo ogólne, zasugeruj rozbicie go na bardziej szczegółowe pytania
-    - Jeśli pytanie nie dotyczy wymienionych tematów, odpowiedz: "Przepraszam, ale nie mogę w tym pomóc. Jeśli masz inne pytanie, chętnie pomogę ;)"
-    - Jeżeli temperatura czatu przekracza 0.5, możesz pozwolić sobie na delikatne żarty w tematyce technologii
-    - Przy wyliczaniu oferty/usług, wybierz tylko te najistotniejsze dla pytającego`
+    Format: **kluczowe**, _ważne_, \`kod\`, listy, ### nagłówki.
+
+    Zasady:
+    - Zwięźle: 3-4 zdania na punkt
+    - Max 5 punktów
+    - Tylko kluczowe informacje
+    - Przy ogólnych pytaniach sugeruj uszczegółowienie
+    - Poza zakresem: "Przepraszam, nie mogę pomóc. Zapytaj o coś innego ;)"
+    - Temp > 0.5: dozwolone żarty tech`
   ),
   HumanMessagePromptTemplate.fromTemplate("{input}"),
 ]);
-
-// Tworzenie historii rozmowy
-const memory = new BufferMemory({
-  returnMessages: true,
-  memoryKey: "chat_history",
-  outputKey: "output",
-  maxMessageCount: 10, // Limit ostatnich 10 wiadomości
-});
 
 global.model = new ChatOpenAI({
   openAIApiKey: process.env.OPENAI_API_KEY,
   temperature: chatbotConfig.temperature,
   maxTokens: chatbotConfig.max_tokens,
   modelName: "gpt-4-turbo-preview",
+  streaming: false, // Wyłączamy streaming, gdyż nie jest wykorzystywany
 });
 
 // Tworzenie sekwencji przetwarzania wiadomości
@@ -413,33 +402,12 @@ app.post("/chat", validateChatInput, async (req, res) => {
 
     const startTime = Date.now();
 
-    // Sprawdzenie czy pytanie jest bardzo ogólne (na podstawie długości odpowiedzi)
-    const initialResponse = await chain.invoke({
-      chat_history: await memory.loadMemoryVariables({}),
+    // Generuj odpowiedź
+    const response = await chain.invoke({
       input: message,
     });
 
-    const initialTokenCount = countTokens(initialResponse.content);
-    let finalResponse;
-
-    if (initialTokenCount > 400) {
-      // Jeśli odpowiedź jest zbyt długa, generujemy nową, bardziej ukierunkowaną odpowiedź
-      const refinedPrompt = `${message}\n\nTwoje pytanie wymaga szerszego wyjaśnienia. Zamiast długiej odpowiedzi, wskażę najważniejsze aspekty i zasugeruję, o co możesz dopytać szczegółowo:`;
-
-      const refinedResponse = await chain.invoke({
-        chat_history: await memory.loadMemoryVariables({}),
-        input: refinedPrompt,
-      });
-
-      finalResponse =
-        refinedResponse.content +
-        "\n\n_Wybierz interesujący Cię aspekt i zapytaj o więcej szczegółów._";
-    } else {
-      finalResponse = initialResponse.content;
-    }
-
-    // Zapisanie odpowiedzi AI w pamięci
-    await memory.saveContext({ input: message }, { output: finalResponse });
+    const finalResponse = response.content;
 
     const endTime = Date.now();
     const responseTime = endTime - startTime;
@@ -470,6 +438,7 @@ app.post("/chat", validateChatInput, async (req, res) => {
     // Zapisz odpowiedź do cache'a
     await saveToCache(message, finalResponse);
 
+    // Wyślij odpowiedź
     res.json({ reply: finalResponse });
   } catch (error) {
     console.log("\x1b[31m%s\x1b[0m", "\n[Error]: === BŁĄD PRZETWARZANIA ===");
@@ -531,6 +500,8 @@ app.post(
         openAIApiKey: process.env.OPENAI_API_KEY,
         temperature: chatbotConfig.temperature,
         modelName: "gpt-4-turbo-preview",
+        maxTokens: chatbotConfig.max_tokens,
+        streaming: false,
       });
 
       res.json({
