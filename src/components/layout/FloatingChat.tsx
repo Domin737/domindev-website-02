@@ -33,18 +33,25 @@ const FloatingChat = () => {
   // Nasłuchuj na zmiany temperatury
   useEffect(() => {
     const handleTemperatureChange = () => {
-      const isCreative = temperature > 0.5;
+      let icon = "📝";
+      let description = "Odpowiedzi będą teraz bardziej spójne i konkretne.";
+
+      if (temperature > 0.5) {
+        icon = "🎨";
+        description = "Odpowiedzi będą teraz bardziej kreatywne i zaskakujące.";
+      } else if (temperature === 0.5) {
+        icon = "⚖️";
+        description =
+          "Odpowiedzi będą teraz wyważone pomiędzy kreatywnością a spójnością.";
+      }
+
       const message = (
         <div>
           <div className="temperature-message">
-            <span className="temperature-icon">{isCreative ? "🎨" : "📝"}</span>
+            <span className="temperature-icon">{icon}</span>
             Zmieniono temperaturę modelu na: {temperature.toFixed(1)}
           </div>
-          <div className="temperature-description">
-            {isCreative
-              ? "Odpowiedzi będą teraz bardziej kreatywne i zaskakujące."
-              : "Odpowiedzi będą teraz bardziej spójne i konkretne."}
-          </div>
+          <div className="temperature-description">{description}</div>
         </div>
       );
 
