@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { BiMessageDetail } from "react-icons/bi";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "./FloatingChat.scss";
 
 interface ChatResponse {
@@ -89,7 +91,38 @@ const FloatingChat = () => {
                 key={index}
                 className={`message ${msg.user === "Ty" ? "user" : "bot"}`}
               >
-                {msg.text}
+                {msg.user === "Ty" ? (
+                  msg.text
+                ) : (
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      strong: ({ node, ...props }) => (
+                        <span className="keyword" {...props} />
+                      ),
+                      em: ({ node, ...props }) => (
+                        <span className="emphasis" {...props} />
+                      ),
+                      code: ({ node, ...props }) => (
+                        <code className="code-snippet" {...props} />
+                      ),
+                      h3: ({ node, ...props }) => (
+                        <h3 className="section-header" {...props} />
+                      ),
+                      p: ({ node, ...props }) => (
+                        <p className="paragraph" {...props} />
+                      ),
+                      ul: ({ node, ...props }) => (
+                        <ul className="list" {...props} />
+                      ),
+                      li: ({ node, ...props }) => (
+                        <li className="list-item" {...props} />
+                      ),
+                    }}
+                  >
+                    {msg.text}
+                  </ReactMarkdown>
+                )}
               </div>
             ))}
             {isLoading && (

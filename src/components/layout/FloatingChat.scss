@@ -177,6 +177,57 @@
           border: 1px solid var(--color-border);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
           backdrop-filter: blur(8px);
+
+          // Style dla elementów markdown
+          .keyword {
+            color: $color-primary;
+            font-weight: 600;
+          }
+
+          .emphasis {
+            font-style: italic;
+            color: var(--color-text-emphasis);
+          }
+
+          .code-snippet {
+            background: var(--color-code-background);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: "Consolas", monospace;
+            font-size: 0.9em;
+            color: var(--color-code-text);
+          }
+
+          .section-header {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin: 8px 0 4px;
+            color: $color-primary;
+          }
+
+          .paragraph {
+            margin: 6px 0;
+            line-height: 1.5;
+          }
+
+          .list {
+            margin: 6px 0;
+            padding-left: 16px;
+          }
+
+          .list-item {
+            margin: 4px 0;
+            line-height: 1.4;
+            position: relative;
+
+            &::before {
+              content: "•";
+              color: $color-primary;
+              position: absolute;
+              left: -14px;
+              font-weight: bold;
+            }
+          }
         }
 
         &.loading {

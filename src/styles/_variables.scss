@@ -7,6 +7,9 @@
   --color-dark-purple: #1a0b2e;
   --background-color-transparent: rgba(10, 10, 15, 0.95);
   --chat-message-background: rgba(26, 11, 46, 0.95);
+  --color-text-emphasis: #{rgba(255, 20, 147, 0.9)};
+  --color-code-background: #{rgba(0, 0, 0, 0.2)};
+  --color-code-text: #{rgba(255, 255, 255, 0.95)};
 
   &[data-theme="light"] {
     // Theme colors - Light Mode
@@ -17,6 +20,9 @@
     --color-dark-purple: #f0e6ff;
     --background-color-transparent: rgba(255, 255, 255, 0.95);
     --chat-message-background: rgba(240, 230, 255, 0.95);
+    --color-text-emphasis: #{rgba(255, 20, 147, 0.8)};
+    --color-code-background: #{rgba(0, 0, 0, 0.05)};
+    --color-code-text: #{rgba(10, 10, 15, 0.95)};
   }
 
   // Colors

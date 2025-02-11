@@ -17,7 +17,7 @@ app.use(express.json());
 
 let chatbotConfig = {
   temperature: 0.5,
-  max_tokens: 200, // Zmniejszony limit tokenów
+  max_tokens: 500, // Zoptymalizowany limit tokenów dla zwięzłych odpowiedzi
 };
 
 let conversationStats = {
@@ -31,7 +31,7 @@ const chatPrompt = ChatPromptTemplate.fromPromptMessages([
     
     Odpowiadasz TYLKO na pytania dotyczące:
     - Tworzenia i modyfikowania stron WordPress (w tym konfiguracja wtyczek, dostosowywanie szablonów)
-    - Pisania „dedykowanego” (custom) kodu i wdrażania niestandardowych rozwiązań
+    - Pisania „dedykowanego" (custom) kodu i wdrażania niestandardowych rozwiązań
     - Implementacji i optymalizacji WooCommerce
     - Analizy istniejących stron i poprawy ich funkcjonalności
     - SEO, integracji zewnętrznych systemów (CRM, ERP, płatności)
@@ -44,13 +44,29 @@ const chatPrompt = ChatPromptTemplate.fromPromptMessages([
     - Implementacji i aktualizacji konfiguracji chatbota
     - Innych pytań związanych z technologią i stronami internetowymi
 
+    ZASADY FORMATOWANIA:
+    1. Używaj Markdown do formatowania odpowiedzi:
+       - **Pogrubienie** dla słów kluczowych i ważnych terminów
+       - _Kursywa_ dla podkreślenia znaczenia
+       - \`kod\` dla nazw technologii, funkcji, komend
+       - Listy punktowane dla wyliczania opcji
+       - ### dla nagłówków sekcji (jeśli potrzebne)
+    
+    2. Struktura odpowiedzi:
+       - Zacznij od najważniejszej informacji
+       - Używaj krótkich akapitów (2-3 zdania)
+       - Grupuj powiązane informacje
+       - Końcowe zdanie powinno być podsumowaniem lub zachętą do działania
+
     WAŻNE ZASADY:
-    - Odpowiadaj zwięźle i konkretnie.
-    - Unikaj rozbudowanych wyjaśnień i nadmiarowych przykładów.
-    - Skup się na najważniejszych informacjach.
-    - Jeśli pytanie nie dotyczy wymienionych tematów, odpowiedz krótko i uprzejmie: „Przepraszam, ale nie mogę w tym pomóc. Jeśli masz inne pytanie, chętnie pomogę ;)”
-    - Maksymalna długość odpowiedzi to 2-3 zdania.
-    - Jeżeli temperatura czatu przekracza 0.5, możesz pozwolić sobie na delikatne żarty w tematyce technologii i stron internetowych.`
+    - Odpowiadaj BARDZO zwięźle i konkretnie, maksymalnie 3-4 zdania na punkt
+    - Ogranicz odpowiedź do maksymalnie 5-6 najważniejszych punktów
+    - Unikaj rozbudowanych wyjaśnień i przykładów
+    - Skup się tylko na kluczowych informacjach
+    - Jeśli pytanie jest bardzo ogólne, zasugeruj rozbicie go na bardziej szczegółowe pytania
+    - Jeśli pytanie nie dotyczy wymienionych tematów, odpowiedz: "Przepraszam, ale nie mogę w tym pomóc. Jeśli masz inne pytanie, chętnie pomogę ;)"
+    - Jeżeli temperatura czatu przekracza 0.5, możesz pozwolić sobie na delikatne żarty w tematyce technologii
+    - Przy wyliczaniu oferty/usług, wybierz tylko te najistotniejsze dla pytającego`
   ),
   HumanMessagePromptTemplate.fromTemplate("{input}"),
 ]);
@@ -105,8 +121,19 @@ app.post("/chat", async (req, res) => {
       input: message,
     });
 
+    let finalResponse = response.content;
+    const estimatedResponseTokens = countTokens(response.content);
+
+    // Sprawdzanie długości odpowiedzi
+    if (estimatedResponseTokens > 400) {
+      // Próg ostrzeżenia
+      const warningMessage =
+        "\n\n_Odpowiedź jest dość długa. Możesz zadać bardziej konkretne pytanie, aby otrzymać zwięzłą odpowiedź._";
+      finalResponse = response.content + warningMessage;
+    }
+
     // Zapisanie odpowiedzi AI w pamięci
-    await memory.saveContext({ input: message }, { output: response.content });
+    await memory.saveContext({ input: message }, { output: finalResponse });
 
     const endTime = Date.now();
     const responseTime = endTime - startTime;
@@ -125,7 +152,7 @@ app.post("/chat", async (req, res) => {
     );
     console.log("\x1b[32m%s\x1b[0m", "===========================\n");
 
-    res.json({ reply: response.content });
+    res.json({ reply: finalResponse });
   } catch (error) {
     console.log("\x1b[31m%s\x1b[0m", "\n=== BŁĄD PRZETWARZANIA ===");
     console.error("\x1b[31m%s\x1b[0m", error);
