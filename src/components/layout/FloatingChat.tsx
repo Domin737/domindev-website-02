@@ -37,11 +37,38 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
     FrequentQuestion[]
   >([]);
   const loadingTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+
+  // Resetuj timer nieaktywności
+  const resetInactivityTimer = () => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    if (isOpen) {
+      inactivityTimerRef.current = setTimeout(() => {
+        setIsOpen(false);
+      }, 300000); // 5 minut nieaktywności
+    }
+  };
+
+  // Resetuj timer przy każdej interakcji
+  useEffect(() => {
+    resetInactivityTimer();
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [isOpen, messages]);
 
   const toggleChat = () => {
-    setIsOpen(!isOpen);
-    if (!isOpen) {
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
+    if (newIsOpen) {
       fetchFrequentQuestions();
+      resetInactivityTimer();
+    } else if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
     }
   };
 
@@ -103,6 +130,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
 
   const sendMessage = async () => {
     if (!input.trim()) return;
+    resetInactivityTimer();
 
     // Zabezpieczenie przed race condition - zapisanie aktualnej wartości input
     const currentInput = input.trim();
@@ -181,7 +209,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
                 {frequentQuestions.length > 0 && (
                   <div className="suggested-questions">
                     <div className="suggested-questions-header">
-                      Popularne pytania:
+                      WASZE popularne pytania:
                     </div>
                     {frequentQuestions.map((fq, index) => (
                       <button

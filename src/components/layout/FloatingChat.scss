@@ -141,6 +141,45 @@
         padding: 20px;
       }
 
+      .suggested-questions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 10px;
+        margin-top: 10px;
+
+        .suggested-questions-header {
+          color: var(--color-text);
+          opacity: 0.8;
+          font-size: 0.9rem;
+          margin-bottom: 4px;
+          text-align: center;
+        }
+
+        .suggested-question {
+          background: var(--color-background);
+          border: 1px solid var(--color-border);
+          padding: 8px 12px;
+          border-radius: 8px;
+          color: var(--color-text);
+          font-size: 0.9rem;
+          cursor: pointer;
+          transition: $transition-smooth;
+          text-align: left;
+
+          &:hover {
+            background: var(--color-background-lighter);
+            border-color: $color-primary;
+            transform: $animation-hover-scale;
+            box-shadow: $neon-glow-primary;
+          }
+
+          &:active {
+            transform: $animation-click-scale;
+          }
+        }
+      }
+
       .message {
         max-width: 80%;
         padding: 10px 12px;

@@ -17,6 +17,61 @@ import {
   HumanMessagePromptTemplate,
 } from "@langchain/core/prompts";
 
+const app = express();
+
+// Podstawowe zabezpieczenia HTTP
+app.use(helmet());
+app.use(cors());
+app.use(express.json({ limit: "100kb", extended: true })); // Limit wielkości żądań
+app.use((req, res, next) => {
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  next();
+});
+
+// Rate limiting dla wszystkich endpointów
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minut
+  max: 50, // zmniejszony limit do 50 żądań na okno czasowe
+  message: "Przekroczono limit zapytań. Spróbuj ponownie później.",
+  standardHeaders: true, // Dodaj nagłówki Rate-Limit do odpowiedzi
+  legacyHeaders: false, // Wyłącz przestarzałe nagłówki X-RateLimit
+});
+
+// Bardziej restrykcyjny limit dla endpointu konfiguracyjnego
+const configLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 godzina
+  max: 10, // limit 10 żądań na godzinę
+  message: "Przekroczono limit prób aktualizacji konfiguracji.",
+});
+
+// Limit dla operacji na zabronionych słowach
+const bannedWordsLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 godzina
+  max: 1000, // limit 1000 żądań na godzinę
+  message:
+    "Przekroczono limit operacji na zabronionych słowach. Spróbuj ponownie później.",
+});
+
+// Limit dla odczytu listy zabronionych słów
+const bannedWordsGetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minut
+  max: 30, // limit 30 żądań na 15 minut
+  message:
+    "Przekroczono limit odczytów listy zabronionych słów. Spróbuj ponownie później.",
+});
+
+// Spowalniacz dla częstych żądań
+const speedLimiter = slowDown({
+  windowMs: 15 * 60 * 1000, // 15 minut
+  delayAfter: 30, // zacznij spowalniać po 30 żądaniach
+  delayMs: (hits) => hits * 200, // zwiększaj opóźnienie o 200ms dla każdego żądania
+  maxDelayMs: 2000, // maksymalne opóźnienie 2 sekundy
+});
+
+// Zastosuj limitery do wszystkich endpointów
+app.use(limiter);
+app.use(speedLimiter);
+
 // Inicjalizacja klientów baz danych
 const mongoClient = new MongoClient(
   process.env.DB_URI || "mongodb://localhost:27017"
@@ -42,6 +97,83 @@ await redisClient.connect().catch((err) => {
 await mongoClient.connect().catch(console.error);
 const db = mongoClient.db("chatbot");
 const questionsCollection = db.collection("frequent_questions");
+const bannedWordsCollection = db.collection("banned_words");
+
+// Funkcja do pobierania zabronionych słów z bazy
+const getBannedWords = async () => {
+  try {
+    const words = await bannedWordsCollection.find({}).toArray();
+    return words.map((w) => w.word);
+  } catch (error) {
+    console.error("Błąd podczas pobierania zabronionych słów:", error);
+    return [];
+  }
+};
+
+// Funkcja sprawdzająca czy tekst zawiera zabronione słowa
+const containsBannedWords = async (text) => {
+  const bannedWords = await getBannedWords();
+  const normalizedText = text.toLowerCase();
+  return bannedWords.some((word) => normalizedText.includes(word));
+};
+
+// Funkcja do filtrowania pytań
+const isQuestionAppropriate = async (question) => {
+  return !(await containsBannedWords(question));
+};
+
+// Endpoint do zarządzania listą zabronionych słów
+app.post(
+  "/banned-words",
+  bannedWordsLimiter,
+  [body("word").trim().notEmpty().withMessage("Słowo nie może być puste")],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const { word } = req.body;
+      await bannedWordsCollection.updateOne(
+        { word: word.toLowerCase() },
+        { $set: { word: word.toLowerCase() } },
+        { upsert: true }
+      );
+      res.json({ message: "Dodano słowo do listy zabronionych" });
+    } catch (error) {
+      res.status(500).json({
+        error: "Błąd podczas dodawania słowa",
+        details: error.message,
+      });
+    }
+  }
+);
+
+app.delete("/banned-words/:word", bannedWordsLimiter, async (req, res) => {
+  try {
+    const { word } = req.params;
+    await bannedWordsCollection.deleteOne({ word: word.toLowerCase() });
+    res.json({ message: "Usunięto słowo z listy zabronionych" });
+  } catch (error) {
+    res.status(500).json({
+      error: "Błąd podczas usuwania słowa",
+      details: error.message,
+    });
+  }
+});
+
+app.get("/banned-words", bannedWordsGetLimiter, async (req, res) => {
+  try {
+    const words = await bannedWordsCollection.find({}).toArray();
+    res.json(words);
+  } catch (error) {
+    res.status(500).json({
+      error: "Błąd podczas pobierania listy zabronionych słów",
+      details: error.message,
+    });
+  }
+});
 
 // Funkcja do normalizacji pytania (usuwa białe znaki, zamienia na małe litery)
 const normalizeQuestion = (question) => {
@@ -71,61 +203,33 @@ const checkCache = async (question) => {
 const saveToCache = async (question, answer) => {
   const normalizedQuestion = normalizeQuestion(question);
 
-  // Zapisz w Redis z czasem wygaśnięcia 24h
-  await redisClient.setEx(
-    `q:${normalizedQuestion}`,
-    24 * 60 * 60,
-    JSON.stringify(answer)
-  );
+  // Sprawdź czy pytanie jest odpowiednie
+  if (await isQuestionAppropriate(normalizedQuestion)) {
+    // Zapisz w Redis z czasem wygaśnięcia 24h
+    await redisClient.setEx(
+      `q:${normalizedQuestion}`,
+      24 * 60 * 60,
+      JSON.stringify(answer)
+    );
 
-  // Zapisz/zaktualizuj w MongoDB
-  await questionsCollection.updateOne(
-    { question: normalizedQuestion },
-    {
-      $inc: { useCount: 1 },
-      $set: {
-        answer,
-        lastUsed: new Date(),
+    // Zapisz/zaktualizuj w MongoDB
+    await questionsCollection.updateOne(
+      { question: normalizedQuestion },
+      {
+        $inc: { useCount: 1 },
+        $set: {
+          answer,
+          lastUsed: new Date(),
+        },
       },
-    },
-    { upsert: true }
-  );
+      { upsert: true }
+    );
+  } else {
+    console.log("\x1b[33m%s\x1b[0m", "\n=== POMINIĘTO ZAPIS PYTANIA ===");
+    console.log("\x1b[37m%s\x1b[0m", "Pytanie zawiera niedozwolone słowa");
+    console.log("\x1b[33m%s\x1b[0m", "==============================\n");
+  }
 };
-
-const app = express();
-
-// Podstawowe zabezpieczenia HTTP
-app.use(helmet());
-app.use(cors());
-app.use(express.json({ limit: "100kb" })); // Limit wielkości żądań
-
-// Rate limiting dla wszystkich endpointów
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minut
-  max: 50, // zmniejszony limit do 50 żądań na okno czasowe
-  message: "Przekroczono limit zapytań. Spróbuj ponownie później.",
-  standardHeaders: true, // Dodaj nagłówki Rate-Limit do odpowiedzi
-  legacyHeaders: false, // Wyłącz przestarzałe nagłówki X-RateLimit
-});
-
-// Bardziej restrykcyjny limit dla endpointu konfiguracyjnego
-const configLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 godzina
-  max: 10, // limit 10 żądań na godzinę
-  message: "Przekroczono limit prób aktualizacji konfiguracji.",
-});
-
-// Spowalniacz dla częstych żądań
-const speedLimiter = slowDown({
-  windowMs: 15 * 60 * 1000, // 15 minut
-  delayAfter: 30, // zacznij spowalniać po 30 żądaniach
-  delayMs: (hits) => hits * 200, // zwiększaj opóźnienie o 200ms dla każdego żądania
-  maxDelayMs: 2000, // maksymalne opóźnienie 2 sekundy
-});
-
-// Zastosuj limitery do wszystkich endpointów
-app.use(limiter);
-app.use(speedLimiter);
 
 let chatbotConfig = {
   temperature: 0.5,
@@ -228,13 +332,21 @@ app.get("/config", (req, res) => {
 // Endpoint do pobierania najczęściej zadawanych pytań
 app.get("/faq", async (req, res) => {
   try {
-    const frequentQuestions = await questionsCollection
+    const allQuestions = await questionsCollection
       .find({})
       .sort({ useCount: -1 })
-      .limit(10)
       .toArray();
 
-    res.json(frequentQuestions);
+    // Filtruj pytania przed wysłaniem
+    const appropriateQuestions = [];
+    for (const question of allQuestions) {
+      if (await isQuestionAppropriate(question.question)) {
+        appropriateQuestions.push(question);
+        if (appropriateQuestions.length >= 10) break;
+      }
+    }
+
+    res.json(appropriateQuestions);
   } catch (error) {
     res.status(500).json({
       error: "Błąd podczas pobierania FAQ",
@@ -252,6 +364,14 @@ app.post("/chat", validateChatInput, async (req, res) => {
   try {
     const { message } = req.body;
     conversationStats.messageCount++;
+
+    // Sprawdź czy pytanie zawiera niedozwolone słowa
+    if (!(await isQuestionAppropriate(message))) {
+      return res.status(400).json({
+        error:
+          "Przepraszam, ale twoje pytanie zawiera niedozwolone słowa. Proszę o kulturalną komunikację.",
+      });
+    }
 
     // Sprawdź cache
     const cachedResponse = await checkCache(message);
