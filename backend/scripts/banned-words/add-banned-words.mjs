@@ -4,25 +4,39 @@ import path from "path";
 
 const API_URL = "http://localhost:3001/banned-words";
 
-async function addWord(word) {
+async function addWord(word, retries = 3, attempt = 1) {
+  const trimmedWord = word.trim();
   try {
+    console.log(`\n[Próba ${attempt}/3] Dodawanie słowa: ${trimmedWord}`);
+
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ word: word.trim() }),
+      body: JSON.stringify({ word: trimmedWord }),
     });
+
+    if (response.status === 429 && retries > 0) {
+      console.log(`⏳ [${trimmedWord}] Limit przekroczony, czekam 5 sekund...`);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      return addWord(trimmedWord, retries - 1, attempt + 1);
+    }
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log(`✅ Dodano słowo: ${word}`);
+    console.log(`✅ [${trimmedWord}] Dodano pomyślnie!`);
     return true;
   } catch (error) {
-    console.error(`❌ Błąd podczas dodawania słowa ${word}:`, error.message);
+    if (error.message.includes("429") && retries > 0) {
+      console.log(`⏳ [${trimmedWord}] Limit przekroczony, czekam 5 sekund...`);
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      return addWord(trimmedWord, retries - 1, attempt + 1);
+    }
+    console.error(`❌ [${trimmedWord}] Błąd:`, error.message);
     return false;
   }
 }
@@ -32,7 +46,9 @@ async function processFile(filePath) {
     const fileContent = await fs.readFile(filePath, "utf-8");
     const words = fileContent.split("\n").filter((word) => word.trim() !== "");
 
-    console.log(`\nZnaleziono ${words.length} słów do dodania.\n`);
+    console.log(`\n=== ROZPOCZYNAM DODAWANIE ===`);
+    console.log(`Znaleziono ${words.length} słów do dodania`);
+    console.log(`===============================\n`);
 
     let successCount = 0;
     let failCount = 0;
@@ -44,8 +60,8 @@ async function processFile(filePath) {
       } else {
         failCount++;
       }
-      // Dodaj małe opóźnienie między requestami
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Zwiększ opóźnienie między requestami do 2 sekund
+      await new Promise((resolve) => setTimeout(resolve, 2000));
     }
 
     console.log("\n=== PODSUMOWANIE ===");

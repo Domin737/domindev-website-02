@@ -33,6 +33,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
 
   const { addTemperatureListener, temperature } = useTemperature();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -41,6 +42,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
   const [frequentQuestions, setFrequentQuestions] = useState<
     FrequentQuestion[]
   >([]);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const loadingTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const inactivityTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
@@ -135,27 +137,24 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
 
   const [currentStreamedResponse, setCurrentStreamedResponse] = useState("");
 
-  const sendMessage = async () => {
-    if (!input.trim()) return;
+  // Funkcja do wysyłania wiadomości i obsługi odpowiedzi
+  const handleMessageSend = async (message: string) => {
     resetInactivityTimer();
 
-    const currentInput = input.trim();
-    const userMessage = { text: currentInput, user: "Ty" };
-
-    setMessages((prev) => [...prev, userMessage]);
+    // Dodaj wiadomość użytkownika
+    setMessages((prev) => [...prev, { text: message, user: "Ty" }]);
     setIsLoading(true);
     setShowLongLoadingMessage(false);
-    setInput("");
     setCurrentStreamedResponse("");
 
-    // Ustawienie timera na 10 sekund dla długich odpowiedzi
+    // Timer dla długich odpowiedzi
     loadingTimerRef.current = setTimeout(() => {
       setShowLongLoadingMessage(true);
     }, 10000);
 
     try {
       const response = await axios.post<ChatResponse>(`${API_URL}/chat`, {
-        message: currentInput,
+        message: message,
       });
 
       setMessages((prev) => [
@@ -182,13 +181,23 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
     }
   };
 
-  // Automatyczne przewijanie do najnowszej wiadomości
+  // Handler dla przycisku "Wyślij"
+  const sendMessage = async () => {
+    if (!input.trim()) return;
+    const message = input.trim();
+    setInput("");
+    await handleMessageSend(message);
+  };
+
+  // Automatyczne przewijanie do najnowszej wiadomości lub sugestii
   useEffect(() => {
-    if (messagesContainerRef.current) {
+    if (lastMessageRef.current) {
+      lastMessageRef.current.scrollIntoView({ behavior: "smooth" });
+    } else if (messagesContainerRef.current) {
       messagesContainerRef.current.scrollTop =
         messagesContainerRef.current.scrollHeight;
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, showSuggestions]);
 
   return (
     <div className="floating-chat">
@@ -216,33 +225,9 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
           <div className="chat-header">Asystent DominDev</div>
           <div className="messages-container" ref={messagesContainerRef}>
             {messages.length === 0 && (
-              <>
-                <div className="welcome-message">
-                  Witaj! Jestem asystentem DominDev. W czym mogę pomóc?
-                </div>
-                {frequentQuestions.length > 0 && (
-                  <div className="suggested-questions">
-                    <div className="suggested-questions-header">
-                      WASZE najpopularniejsze zapytania:
-                    </div>
-                    {frequentQuestions
-                      .sort((a, b) => b.useCount - a.useCount)
-                      .slice(0, 5)
-                      .map((fq, index) => (
-                        <button
-                          key={index}
-                          className="suggested-question"
-                          onClick={() => {
-                            setInput(fq.question);
-                            sendMessage();
-                          }}
-                        >
-                          {capitalizeFirstLetter(fq.question)}
-                        </button>
-                      ))}
-                  </div>
-                )}
-              </>
+              <div className="welcome-message">
+                Witaj! Jestem asystentem DominDev. W czym mogę pomóc?
+              </div>
             )}
             {messages.map((msg, index) => (
               <div
@@ -313,8 +298,48 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
                 </div>
               </div>
             )}
+            {showSuggestions && frequentQuestions.length > 0 && (
+              <div className="suggested-questions" ref={lastMessageRef}>
+                <div className="suggested-questions-header">
+                  WASZE najpopularniejsze zapytania:
+                </div>
+                {frequentQuestions
+                  .sort((a, b) => b.useCount - a.useCount)
+                  .slice(0, 5)
+                  .map((fq, index) => (
+                    <button
+                      key={index}
+                      className="suggested-question"
+                      onClick={() => handleMessageSend(fq.question)}
+                    >
+                      {capitalizeFirstLetter(fq.question)}
+                    </button>
+                  ))}
+              </div>
+            )}
           </div>
           <div className="chat-input-form">
+            <button
+              className={`toggle-suggestions-btn ${
+                showSuggestions ? "active" : ""
+              }`}
+              onClick={() => setShowSuggestions(!showSuggestions)}
+              title={showSuggestions ? "Ukryj sugestie" : "Pokaż sugestie"}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12" y2="17" />
+              </svg>
+            </button>
             <input
               type="text"
               value={input}
@@ -326,7 +351,24 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
                 }
               }}
             />
-            <button onClick={sendMessage}>Wyślij</button>
+            <button
+              onClick={sendMessage}
+              className="send-message-btn"
+              title="Wyślij wiadomość"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14" />
+                <path d="M12 5l7 7-7 7" />
+              </svg>
+            </button>
           </div>
         </div>
       )}
