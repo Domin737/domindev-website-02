@@ -18,7 +18,9 @@ interface ChatMessage {
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
-const FloatingChat = () => {
+interface FloatingChatProps {}
+
+const FloatingChat: React.FC<FloatingChatProps> = () => {
   const { addTemperatureListener, temperature } = useTemperature();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -236,4 +238,5 @@ const FloatingChat = () => {
   );
 };
 
+export type { FloatingChatProps };
 export default FloatingChat;
