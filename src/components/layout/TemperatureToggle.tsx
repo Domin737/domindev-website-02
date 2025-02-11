@@ -109,10 +109,9 @@ const TemperatureToggle = ({ onTemperatureChange }: TemperatureToggleProps) => {
         <div className="temperature-toggle__controls active">
           <div className="temperature-control">
             <div className="temperature-toggle__tooltip">
-              Temperatura określa kreatywność i nieprzewidywalność odpowiedzi
-              AI. Wyższa wartość (np. 0.8) zwiększa kreatywność, ale może
-              prowadzić do mniej spójnych odpowiedzi. Niższa wartość (np. 0.2)
-              zapewnia bardziej przewidywalne i konkretne odpowiedzi.
+              Ustaw wyższą temperaturę, jeśli chcesz bardziej kreatywnych i
+              zaskakujących odpowiedzi. Zmniejsz ją, gdy zależy Ci na większej
+              spójności i konkretach.
             </div>
             <div className="temperature-control__inputs">
               <label>
