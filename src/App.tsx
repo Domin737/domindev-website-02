@@ -8,6 +8,7 @@ import { ScrollToTop } from "./components/layout/ScrollToTop";
 import AdminPanel from "./components/layout/AdminPanel";
 import FloatingChat from "./components/layout/FloatingChat";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { TemperatureProvider } from "./contexts/TemperatureContext";
 import "./styles/global.scss";
 
 // Lazy load sekcje
@@ -43,34 +44,38 @@ function App() {
 
   return (
     <ThemeProvider theme={theme} setTheme={setTheme}>
-      <ScrollProgress />
-      {isLoading && <Preloader />}
-      <Header />
-      <main>
-        <Suspense fallback={<div className="section-loader">Ładowanie...</div>}>
-          <Hero />
-          <About />
-          <Services />
-          <Portfolio />
-          <FAQ />
-          <Contact />
-        </Suspense>
-      </main>
-      <Footer />
-      <AdminPanel />
-      <FloatingChat />
-      <ScrollToTop />
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          duration: 5000,
-          style: {
-            background: "var(--color-background-darker)",
-            color: "var(--color-text)",
-            boxShadow: "var(--neon-glow-primary)",
-          },
-        }}
-      />
+      <TemperatureProvider>
+        <ScrollProgress />
+        {isLoading && <Preloader />}
+        <Header />
+        <main>
+          <Suspense
+            fallback={<div className="section-loader">Ładowanie...</div>}
+          >
+            <Hero />
+            <About />
+            <Services />
+            <Portfolio />
+            <FAQ />
+            <Contact />
+          </Suspense>
+        </main>
+        <Footer />
+        <AdminPanel />
+        <FloatingChat />
+        <ScrollToTop />
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            duration: 5000,
+            style: {
+              background: "var(--color-background-darker)",
+              color: "var(--color-text)",
+              boxShadow: "var(--neon-glow-primary)",
+            },
+          }}
+        />
+      </TemperatureProvider>
     </ThemeProvider>
   );
 }

@@ -1,19 +1,14 @@
-import { useState, useRef, memo, useEffect, useContext, FC } from "react";
+import { useState, useRef, memo, useContext, useEffect, FC } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
-
-interface ConfigResponse {
-  temperature: number;
-}
 import { ThemeContext } from "../../contexts/ThemeContext";
+import { useTemperature } from "../../contexts/TemperatureContext";
 import { useThemeColors } from "../../hooks/useThemeColors";
 import "./TemperatureToggle.scss";
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
-interface TemperatureToggleProps {
-  onTemperatureChange?: () => void;
-}
+interface TemperatureToggleProps {}
 
 const ThermometerIcon: FC = () => (
   <svg
@@ -31,29 +26,13 @@ const ThermometerIcon: FC = () => (
   </svg>
 );
 
-const TemperatureToggle = ({ onTemperatureChange }: TemperatureToggleProps) => {
+const TemperatureToggle = ({}: TemperatureToggleProps) => {
   const { theme } = useContext(ThemeContext);
   useThemeColors(theme);
+  const { temperature, setTemperature, onTemperatureChange } = useTemperature();
   const [isOpen, setIsOpen] = useState(false);
-  const [temperature, setTemperature] = useState(0.5);
   const [isSaving, setIsSaving] = useState(false);
   const toggleRef = useRef<HTMLDivElement>(null);
-
-  // Pobierz aktualną temperaturę przy montowaniu komponentu
-  useEffect(() => {
-    const fetchCurrentTemperature = async () => {
-      try {
-        const response = await axios.get<ConfigResponse>(`${API_URL}/config`);
-        setTemperature(response.data.temperature);
-      } catch (error) {
-        console.error("Błąd podczas pobierania temperatury:", error);
-        toast.error("Błąd podczas pobierania temperatury", {
-          id: "temperature-error",
-        });
-      }
-    };
-    fetchCurrentTemperature();
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -83,7 +62,7 @@ const TemperatureToggle = ({ onTemperatureChange }: TemperatureToggleProps) => {
         id: "temperature-update",
       });
       setIsOpen(false); // Zamknij panel po zapisaniu
-      onTemperatureChange?.();
+      onTemperatureChange(); // Wywołaj funkcję zmiany temperatury
     } catch (error) {
       console.error("Błąd podczas aktualizacji temperatury:", error);
       toast.error("Błąd podczas aktualizacji temperatury", {

@@ -1,8 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useContext } from "react";
 import axios from "axios";
 import { BiMessageDetail } from "react-icons/bi";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useTemperature } from "../../contexts/TemperatureContext";
 import "./FloatingChat.scss";
 
 interface ChatResponse {
@@ -12,6 +13,7 @@ interface ChatResponse {
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
 const FloatingChat = () => {
+  const { addTemperatureListener } = useTemperature();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -23,6 +25,26 @@ const FloatingChat = () => {
   const loadingTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const toggleChat = () => setIsOpen(!isOpen);
+
+  // Nasłuchuj na zmiany temperatury
+  useEffect(() => {
+    // Funkcja wywoływana przy zmianie temperatury
+    const handleTemperatureChange = () => {
+      setMessages((prev) => [
+        ...prev,
+        {
+          text: "Zmieniono temperaturę modelu. Kolejne odpowiedzi będą dostosowane do nowego ustawienia.",
+          user: "Bot",
+        },
+      ]);
+    };
+
+    // Zarejestruj nasłuchiwanie i zapisz funkcję czyszczącą
+    const unsubscribe = addTemperatureListener(handleTemperatureChange);
+
+    // Wyczyść nasłuchiwanie przy odmontowaniu komponentu
+    return () => unsubscribe();
+  }, [addTemperatureListener]);
 
   // Reset stanu ładowania przy odmontowaniu komponentu
   useEffect(() => {
