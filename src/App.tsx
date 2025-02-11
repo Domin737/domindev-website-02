@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { Toaster } from "react-hot-toast";
 import Header from "./components/layout/Header";
 import ScrollProgress from "./components/layout/ScrollProgress";
 import Preloader from "./components/layout/Preloader";
@@ -59,6 +60,17 @@ function App() {
       <AdminPanel />
       <FloatingChat />
       <ScrollToTop />
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 5000,
+          style: {
+            background: "var(--color-background-darker)",
+            color: "var(--color-text)",
+            boxShadow: "var(--neon-glow-primary)",
+          },
+        }}
+      />
     </ThemeProvider>
   );
 }

@@ -140,6 +140,13 @@ const validateChatInput = [
     .escape(),
 ];
 
+// Endpoint do pobierania aktualnej konfiguracji
+app.get("/config", (req, res) => {
+  res.json({
+    temperature: chatbotConfig.temperature,
+  });
+});
+
 app.post("/chat", validateChatInput, async (req, res) => {
   // Sprawdź błędy walidacji
   const errors = validationResult(req);
@@ -251,7 +258,13 @@ app.post(
         });
       }
 
+      const oldTemp = chatbotConfig.temperature;
       chatbotConfig.temperature = temperature;
+
+      console.log("\x1b[33m%s\x1b[0m", "\n=== ZMIANA TEMPERATURY ===");
+      console.log("\x1b[37m%s\x1b[0m", `Poprzednia temperatura: ${oldTemp}`);
+      console.log("\x1b[37m%s\x1b[0m", `Nowa temperatura: ${temperature}`);
+      console.log("\x1b[33m%s\x1b[0m", "========================\n");
 
       // Aktualizacja modelu
       global.model = new ChatOpenAI({

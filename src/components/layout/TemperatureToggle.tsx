@@ -1,5 +1,10 @@
-import { useState, useRef, memo, useEffect, useContext } from "react";
+import { useState, useRef, memo, useEffect, useContext, FC } from "react";
 import axios from "axios";
+import toast from "react-hot-toast";
+
+interface ConfigResponse {
+  temperature: number;
+}
 import { ThemeContext } from "../../contexts/ThemeContext";
 import { useThemeColors } from "../../hooks/useThemeColors";
 import "./TemperatureToggle.scss";
@@ -10,7 +15,7 @@ interface TemperatureToggleProps {
   onTemperatureChange?: () => void;
 }
 
-const ThermometerIcon = () => (
+const ThermometerIcon: FC = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -30,9 +35,25 @@ const TemperatureToggle = ({ onTemperatureChange }: TemperatureToggleProps) => {
   const { theme } = useContext(ThemeContext);
   useThemeColors(theme);
   const [isOpen, setIsOpen] = useState(false);
-  const [temperature, setTemperature] = useState(0.7);
+  const [temperature, setTemperature] = useState(0.5);
   const [isSaving, setIsSaving] = useState(false);
   const toggleRef = useRef<HTMLDivElement>(null);
+
+  // Pobierz aktualną temperaturę przy montowaniu komponentu
+  useEffect(() => {
+    const fetchCurrentTemperature = async () => {
+      try {
+        const response = await axios.get<ConfigResponse>(`${API_URL}/config`);
+        setTemperature(response.data.temperature);
+      } catch (error) {
+        console.error("Błąd podczas pobierania temperatury:", error);
+        toast.error("Błąd podczas pobierania temperatury", {
+          id: "temperature-error",
+        });
+      }
+    };
+    fetchCurrentTemperature();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -54,11 +75,20 @@ const TemperatureToggle = ({ onTemperatureChange }: TemperatureToggleProps) => {
     try {
       setIsSaving(true);
       await axios.post(`${API_URL}/update-config`, { temperature });
-      alert("Zaktualizowano temperaturę modelu!");
+      const message =
+        temperature > 0.5
+          ? "↗️ Zwiększono kreatywność odpowiedzi"
+          : "↘️ Ustawiono bardziej konkretne odpowiedzi";
+      toast.success(message, {
+        id: "temperature-update",
+      });
+      setIsOpen(false); // Zamknij panel po zapisaniu
       onTemperatureChange?.();
     } catch (error) {
       console.error("Błąd podczas aktualizacji temperatury:", error);
-      alert("Wystąpił błąd podczas aktualizacji temperatury.");
+      toast.error("Błąd podczas aktualizacji temperatury", {
+        id: "temperature-error",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -109,6 +139,7 @@ const TemperatureToggle = ({ onTemperatureChange }: TemperatureToggleProps) => {
                 onClick={updateTemperature}
                 disabled={isSaving}
                 className="save-button"
+                title="Zapisz temperaturę"
               >
                 {isSaving ? "..." : "✓"}
               </button>

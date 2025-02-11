@@ -1,6 +1,8 @@
 @use "../../styles/variables" as *;
 
 .temperature-toggle {
+  position: relative;
+
   &__button {
     background: $color-primary;
     color: white;
