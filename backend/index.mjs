@@ -86,15 +86,19 @@ const redisClient = createClient({
 });
 
 // Obsługa błędów Redis
-redisClient.on("error", (err) => console.log("Redis Client Error", err));
+redisClient.on("error", (err) =>
+  console.log("[Redis]: Redis Client Error", err)
+);
 
 // Połączenie z Redis
 await redisClient.connect().catch((err) => {
-  console.error("Błąd połączenia z Redis:", err);
+  console.error("[Redis]: Błąd połączenia z Redis:", err);
 });
 
 // Połączenie z MongoDB
-await mongoClient.connect().catch(console.error);
+await mongoClient
+  .connect()
+  .catch((err) => console.error("[MongoDB]: Error:", err));
 const db = mongoClient.db("chatbot");
 const questionsCollection = db.collection("frequent_questions");
 const bannedWordsCollection = db.collection("banned_words");
@@ -105,7 +109,10 @@ const getBannedWords = async () => {
     const words = await bannedWordsCollection.find({}).toArray();
     return words.map((w) => w.word);
   } catch (error) {
-    console.error("Błąd podczas pobierania zabronionych słów:", error);
+    console.error(
+      "[MongoDB]: Błąd podczas pobierania zabronionych słów:",
+      error
+    );
     return [];
   }
 };
@@ -225,9 +232,18 @@ const saveToCache = async (question, answer) => {
       { upsert: true }
     );
   } else {
-    console.log("\x1b[33m%s\x1b[0m", "\n=== POMINIĘTO ZAPIS PYTANIA ===");
-    console.log("\x1b[37m%s\x1b[0m", "Pytanie zawiera niedozwolone słowa");
-    console.log("\x1b[33m%s\x1b[0m", "==============================\n");
+    console.log(
+      "\x1b[33m%s\x1b[0m",
+      "\n[Cache]: === POMINIĘTO ZAPIS PYTANIA ==="
+    );
+    console.log(
+      "\x1b[37m%s\x1b[0m",
+      "[Cache]: Pytanie zawiera niedozwolone słowa"
+    );
+    console.log(
+      "\x1b[33m%s\x1b[0m",
+      "[Cache]: ==============================\n"
+    );
   }
 };
 
@@ -376,24 +392,24 @@ app.post("/chat", validateChatInput, async (req, res) => {
     // Sprawdź cache
     const cachedResponse = await checkCache(message);
     if (cachedResponse) {
-      console.log("\x1b[32m%s\x1b[0m", "\n=== ODPOWIEDŹ Z CACHE ===");
+      console.log("\x1b[32m%s\x1b[0m", "\n[Cache]: === ODPOWIEDŹ Z CACHE ===");
       return res.json({ reply: cachedResponse });
     }
-    console.log("\x1b[36m%s\x1b[0m", "\n=== NOWE ZAPYTANIE ===");
+    console.log("\x1b[36m%s\x1b[0m", "\n[ChatBot]: === NOWE ZAPYTANIE ===");
     console.log(
       "\x1b[37m%s\x1b[0m",
-      `Zapytanie #${conversationStats.messageCount}`
+      `[ChatBot]: Zapytanie #${conversationStats.messageCount}`
     );
-    console.log("\x1b[37m%s\x1b[0m", `Treść: ${message}`);
+    console.log("\x1b[37m%s\x1b[0m", `[ChatBot]: Treść: ${message}`);
     console.log(
       "\x1b[37m%s\x1b[0m",
-      `Długość zapytania: ${message.length} znaków`
+      `[ChatBot]: Długość zapytania: ${message.length} znaków`
     );
     console.log(
       "\x1b[37m%s\x1b[0m",
-      `Szacowana liczba tokenów: ~${countTokens(message)}`
+      `[ChatBot]: Szacowana liczba tokenów: ~${countTokens(message)}`
     );
-    console.log("\x1b[36m%s\x1b[0m", "====================\n");
+    console.log("\x1b[36m%s\x1b[0m", "[ChatBot]: ====================\n");
 
     const startTime = Date.now();
 
@@ -430,26 +446,35 @@ app.post("/chat", validateChatInput, async (req, res) => {
     const finalResponseLength = finalResponse.length;
     const finalTokenCount = countTokens(finalResponse);
 
-    console.log("\x1b[32m%s\x1b[0m", "\n=== STATYSTYKI ODPOWIEDZI ===");
-    console.log("\x1b[37m%s\x1b[0m", `Czas odpowiedzi: ${responseTime}ms`);
     console.log(
-      "\x1b[37m%s\x1b[0m",
-      `Długość tekstu: ${finalResponseLength} znaków`
+      "\x1b[32m%s\x1b[0m",
+      "\n[ChatBot]: === STATYSTYKI ODPOWIEDZI ==="
     );
     console.log(
       "\x1b[37m%s\x1b[0m",
-      `Szacowana liczba tokenów: ~${finalTokenCount}`
+      `[ChatBot]: Czas odpowiedzi: ${responseTime}ms`
     );
-    console.log("\x1b[32m%s\x1b[0m", "===========================\n");
+    console.log(
+      "\x1b[37m%s\x1b[0m",
+      `[ChatBot]: Długość tekstu: ${finalResponseLength} znaków`
+    );
+    console.log(
+      "\x1b[37m%s\x1b[0m",
+      `[ChatBot]: Szacowana liczba tokenów: ~${finalTokenCount}`
+    );
+    console.log(
+      "\x1b[32m%s\x1b[0m",
+      "[ChatBot]: ===========================\n"
+    );
 
     // Zapisz odpowiedź do cache'a
     await saveToCache(message, finalResponse);
 
     res.json({ reply: finalResponse });
   } catch (error) {
-    console.log("\x1b[31m%s\x1b[0m", "\n=== BŁĄD PRZETWARZANIA ===");
-    console.error("\x1b[31m%s\x1b[0m", error);
-    console.log("\x1b[31m%s\x1b[0m", "========================\n");
+    console.log("\x1b[31m%s\x1b[0m", "\n[Error]: === BŁĄD PRZETWARZANIA ===");
+    console.error("\x1b[31m%s\x1b[0m", `[Error]: ${error}`);
+    console.log("\x1b[31m%s\x1b[0m", "[Error]: ========================\n");
     res.status(500).json({
       error: "Wystąpił błąd podczas przetwarzania wiadomości",
       details: error.message,
@@ -487,10 +512,19 @@ app.post(
       const oldTemp = chatbotConfig.temperature;
       chatbotConfig.temperature = temperature;
 
-      console.log("\x1b[33m%s\x1b[0m", "\n=== ZMIANA TEMPERATURY ===");
-      console.log("\x1b[37m%s\x1b[0m", `Poprzednia temperatura: ${oldTemp}`);
-      console.log("\x1b[37m%s\x1b[0m", `Nowa temperatura: ${temperature}`);
-      console.log("\x1b[33m%s\x1b[0m", "========================\n");
+      console.log(
+        "\x1b[33m%s\x1b[0m",
+        "\n[ChatBot]: === ZMIANA TEMPERATURY ==="
+      );
+      console.log(
+        "\x1b[37m%s\x1b[0m",
+        `[ChatBot]: Poprzednia temperatura: ${oldTemp}`
+      );
+      console.log(
+        "\x1b[37m%s\x1b[0m",
+        `[ChatBot]: Nowa temperatura: ${temperature}`
+      );
+      console.log("\x1b[33m%s\x1b[0m", "[ChatBot]: ========================\n");
 
       // Aktualizacja modelu
       global.model = new ChatOpenAI({
@@ -504,7 +538,10 @@ app.post(
         newConfig: chatbotConfig,
       });
     } catch (error) {
-      console.error("Błąd podczas aktualizacji konfiguracji:", error);
+      console.error(
+        "[ChatBot]: Błąd podczas aktualizacji konfiguracji:",
+        error
+      );
       res.status(500).json({
         error: "Wystąpił błąd podczas aktualizacji konfiguracji",
         details: error.message,
@@ -515,8 +552,10 @@ app.post(
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log("Połączono z Redis");
-  console.log("Połączono z MongoDB");
-  console.log(`Serwer backend działa na porcie: ${PORT}`);
-  console.log(`Temperatura modelu chatbota: ${chatbotConfig.temperature}`);
+  console.log("[Redis]: Połączono z bazą Redis");
+  console.log("[MongoDB]: Połączono z bazą MongoDB");
+  console.log(`[Server]: Serwer backend działa na porcie: ${PORT}`);
+  console.log(
+    `[ChatBot]: Temperatura modelu chatbota: ${chatbotConfig.temperature}`
+  );
 });

@@ -27,6 +27,10 @@ const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 interface FloatingChatProps {}
 
 const FloatingChat: React.FC<FloatingChatProps> = () => {
+  const capitalizeFirstLetter = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+
   const { addTemperatureListener, temperature } = useTemperature();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -230,7 +234,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
                             sendMessage();
                           }}
                         >
-                          {fq.question}
+                          {capitalizeFirstLetter(fq.question)}
                         </button>
                       ))}
                   </div>
