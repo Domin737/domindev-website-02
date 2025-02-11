@@ -317,6 +317,20 @@
             margin: 4px 0;
             line-height: 1.4;
           }
+
+          &.error-message {
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff0000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            &::before {
+              content: "⚠️";
+              font-size: 1.2em;
+              color: #ff0000;
+            }
+          }
         }
 
         &.loading {

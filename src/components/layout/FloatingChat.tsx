@@ -14,6 +14,7 @@ interface ChatMessage {
   text: string | React.ReactNode;
   user: string;
   isTemperatureChange?: boolean;
+  isError?: boolean;
 }
 
 interface FrequentQuestion {
@@ -154,10 +155,16 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
         ...prev,
         { text: response.data.reply, user: "Bot" },
       ]);
-    } catch (error) {
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.error || "Błąd serwera. Spróbuj ponownie.";
       setMessages((prev) => [
         ...prev,
-        { text: "Błąd serwera. Spróbuj ponownie.", user: "Bot" },
+        {
+          text: errorMessage,
+          user: "Bot",
+          isError: true,
+        },
       ]);
     } finally {
       setIsLoading(false);
@@ -209,20 +216,23 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
                 {frequentQuestions.length > 0 && (
                   <div className="suggested-questions">
                     <div className="suggested-questions-header">
-                      WASZE popularne pytania:
+                      WASZE najpopularniejsze zapytania:
                     </div>
-                    {frequentQuestions.map((fq, index) => (
-                      <button
-                        key={index}
-                        className="suggested-question"
-                        onClick={() => {
-                          setInput(fq.question);
-                          sendMessage();
-                        }}
-                      >
-                        {fq.question}
-                      </button>
-                    ))}
+                    {frequentQuestions
+                      .sort((a, b) => b.useCount - a.useCount)
+                      .slice(0, 5)
+                      .map((fq, index) => (
+                        <button
+                          key={index}
+                          className="suggested-question"
+                          onClick={() => {
+                            setInput(fq.question);
+                            sendMessage();
+                          }}
+                        >
+                          {fq.question}
+                        </button>
+                      ))}
                   </div>
                 )}
               </>
@@ -232,7 +242,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
                 key={index}
                 className={`message ${msg.user === "Ty" ? "user" : "bot"} ${
                   msg.isTemperatureChange ? "temperature-change" : ""
-                }`}
+                } ${msg.isError ? "error-message" : ""}`}
               >
                 {msg.user === "Ty" ? (
                   msg.text
