@@ -116,20 +116,29 @@ app.post("/chat", async (req, res) => {
 
     const startTime = Date.now();
 
-    const response = await chain.invoke({
+    // Sprawdzenie czy pytanie jest bardzo ogólne (na podstawie długości odpowiedzi)
+    const initialResponse = await chain.invoke({
       chat_history: await memory.loadMemoryVariables({}),
       input: message,
     });
 
-    let finalResponse = response.content;
-    const estimatedResponseTokens = countTokens(response.content);
+    const initialTokenCount = countTokens(initialResponse.content);
+    let finalResponse;
 
-    // Sprawdzanie długości odpowiedzi
-    if (estimatedResponseTokens > 400) {
-      // Próg ostrzeżenia
-      const warningMessage =
-        "\n\n_Odpowiedź jest dość długa. Możesz zadać bardziej konkretne pytanie, aby otrzymać zwięzłą odpowiedź._";
-      finalResponse = response.content + warningMessage;
+    if (initialTokenCount > 400) {
+      // Jeśli odpowiedź jest zbyt długa, generujemy nową, bardziej ukierunkowaną odpowiedź
+      const refinedPrompt = `${message}\n\nTwoje pytanie wymaga szerszego wyjaśnienia. Zamiast długiej odpowiedzi, wskażę najważniejsze aspekty i zasugeruję, o co możesz dopytać szczegółowo:`;
+
+      const refinedResponse = await chain.invoke({
+        chat_history: await memory.loadMemoryVariables({}),
+        input: refinedPrompt,
+      });
+
+      finalResponse =
+        refinedResponse.content +
+        "\n\n_Wybierz interesujący Cię aspekt i zapytaj o więcej szczegółów._";
+    } else {
+      finalResponse = initialResponse.content;
     }
 
     // Zapisanie odpowiedzi AI w pamięci
@@ -137,18 +146,18 @@ app.post("/chat", async (req, res) => {
 
     const endTime = Date.now();
     const responseTime = endTime - startTime;
-    const responseLength = response.content.length;
-    const estimatedTokens = countTokens(response.content);
+    const finalResponseLength = finalResponse.length;
+    const finalTokenCount = countTokens(finalResponse);
 
     console.log("\x1b[32m%s\x1b[0m", "\n=== STATYSTYKI ODPOWIEDZI ===");
     console.log("\x1b[37m%s\x1b[0m", `Czas odpowiedzi: ${responseTime}ms`);
     console.log(
       "\x1b[37m%s\x1b[0m",
-      `Długość tekstu: ${responseLength} znaków`
+      `Długość tekstu: ${finalResponseLength} znaków`
     );
     console.log(
       "\x1b[37m%s\x1b[0m",
-      `Szacowana liczba tokenów: ~${estimatedTokens}`
+      `Szacowana liczba tokenów: ~${finalTokenCount}`
     );
     console.log("\x1b[32m%s\x1b[0m", "===========================\n");
 

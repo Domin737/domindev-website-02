@@ -19,20 +19,40 @@ const FloatingChat = () => {
     []
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [showLongLoadingMessage, setShowLongLoadingMessage] = useState(false);
+  const loadingTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
   const toggleChat = () => setIsOpen(!isOpen);
+
+  // Reset stanu ładowania przy odmontowaniu komponentu
+  useEffect(() => {
+    return () => {
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+      }
+    };
+  }, []);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { text: input, user: "Ty" };
+    // Zabezpieczenie przed race condition - zapisanie aktualnej wartości input
+    const currentInput = input.trim();
+    const userMessage = { text: currentInput, user: "Ty" };
+
     setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
+    setShowLongLoadingMessage(false);
     setInput("");
+
+    // Ustawienie timera na 10 sekund
+    loadingTimerRef.current = setTimeout(() => {
+      setShowLongLoadingMessage(true);
+    }, 10000);
 
     try {
       const response = await axios.post<ChatResponse>(`${API_URL}/chat`, {
-        message: input,
+        message: currentInput,
       });
       setMessages((prev) => [
         ...prev,
@@ -45,6 +65,10 @@ const FloatingChat = () => {
       ]);
     } finally {
       setIsLoading(false);
+      setShowLongLoadingMessage(false);
+      if (loadingTimerRef.current) {
+        clearTimeout(loadingTimerRef.current);
+      }
     }
   };
 
@@ -132,6 +156,12 @@ const FloatingChat = () => {
                   <span></span>
                   <span></span>
                 </div>
+                {showLongLoadingMessage && (
+                  <div className="long-loading-message">
+                    Proszę o cierpliwość. Odpowiedź jest obszerna i wymaga
+                    więcej czasu...
+                  </div>
+                )}
               </div>
             )}
           </div>
