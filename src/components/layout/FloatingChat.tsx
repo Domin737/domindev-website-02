@@ -16,6 +16,11 @@ interface ChatMessage {
   isTemperatureChange?: boolean;
 }
 
+interface FrequentQuestion {
+  question: string;
+  useCount: number;
+}
+
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
 interface FloatingChatProps {}
@@ -28,9 +33,26 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showLongLoadingMessage, setShowLongLoadingMessage] = useState(false);
+  const [frequentQuestions, setFrequentQuestions] = useState<
+    FrequentQuestion[]
+  >([]);
   const loadingTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
 
-  const toggleChat = () => setIsOpen(!isOpen);
+  const toggleChat = () => {
+    setIsOpen(!isOpen);
+    if (!isOpen) {
+      fetchFrequentQuestions();
+    }
+  };
+
+  const fetchFrequentQuestions = async () => {
+    try {
+      const response = await axios.get<FrequentQuestion[]>(`${API_URL}/faq`);
+      setFrequentQuestions(response.data);
+    } catch (error) {
+      console.error("Błąd podczas pobierania FAQ:", error);
+    }
+  };
 
   // Nasłuchuj na zmiany temperatury
   useEffect(() => {
@@ -152,9 +174,30 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
           <div className="chat-header">Asystent DominDev</div>
           <div className="messages-container" ref={messagesContainerRef}>
             {messages.length === 0 && (
-              <div className="welcome-message">
-                Witaj! Jestem asystentem DominDev. W czym mogę pomóc?
-              </div>
+              <>
+                <div className="welcome-message">
+                  Witaj! Jestem asystentem DominDev. W czym mogę pomóc?
+                </div>
+                {frequentQuestions.length > 0 && (
+                  <div className="suggested-questions">
+                    <div className="suggested-questions-header">
+                      Popularne pytania:
+                    </div>
+                    {frequentQuestions.map((fq, index) => (
+                      <button
+                        key={index}
+                        className="suggested-question"
+                        onClick={() => {
+                          setInput(fq.question);
+                          sendMessage();
+                        }}
+                      >
+                        {fq.question}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
             {messages.map((msg, index) => (
               <div

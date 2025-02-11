@@ -18,7 +18,9 @@
     "express-slow-down": "^2.0.3",
     "express-validator": "^7.2.1",
     "helmet": "^8.0.0",
-    "langchain": "^0.1.37"
+    "langchain": "^0.1.37",
+    "mongodb": "^6.13.0",
+    "redis": "^4.7.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.3"

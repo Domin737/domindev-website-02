@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import { MongoClient } from "mongodb";
+import { createClient } from "redis";
 import { ChatOpenAI } from "@langchain/openai";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
@@ -14,6 +16,81 @@ import {
   SystemMessagePromptTemplate,
   HumanMessagePromptTemplate,
 } from "@langchain/core/prompts";
+
+// Inicjalizacja klientów baz danych
+const mongoClient = new MongoClient(
+  process.env.DB_URI || "mongodb://localhost:27017"
+);
+const redisClient = createClient({
+  username: process.env.REDIS_USERNAME,
+  password: process.env.REDIS_PASSWORD,
+  socket: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT,
+  },
+});
+
+// Obsługa błędów Redis
+redisClient.on("error", (err) => console.log("Redis Client Error", err));
+
+// Połączenie z Redis
+await redisClient.connect().catch((err) => {
+  console.error("Błąd połączenia z Redis:", err);
+});
+
+// Połączenie z MongoDB
+await mongoClient.connect().catch(console.error);
+const db = mongoClient.db("chatbot");
+const questionsCollection = db.collection("frequent_questions");
+
+// Funkcja do normalizacji pytania (usuwa białe znaki, zamienia na małe litery)
+const normalizeQuestion = (question) => {
+  return question.toLowerCase().trim().replace(/\s+/g, " ");
+};
+
+// Funkcja do sprawdzania cache'a Redis
+const checkCache = async (question) => {
+  const normalizedQuestion = normalizeQuestion(question);
+  const cached = await redisClient.get(`q:${normalizedQuestion}`);
+  if (cached) {
+    // Aktualizuj licznik użyć w MongoDB
+    await questionsCollection.updateOne(
+      { question: normalizedQuestion },
+      {
+        $inc: { useCount: 1 },
+        $set: { lastUsed: new Date() },
+      },
+      { upsert: true }
+    );
+    return JSON.parse(cached);
+  }
+  return null;
+};
+
+// Funkcja do zapisywania w cache'u
+const saveToCache = async (question, answer) => {
+  const normalizedQuestion = normalizeQuestion(question);
+
+  // Zapisz w Redis z czasem wygaśnięcia 24h
+  await redisClient.setEx(
+    `q:${normalizedQuestion}`,
+    24 * 60 * 60,
+    JSON.stringify(answer)
+  );
+
+  // Zapisz/zaktualizuj w MongoDB
+  await questionsCollection.updateOne(
+    { question: normalizedQuestion },
+    {
+      $inc: { useCount: 1 },
+      $set: {
+        answer,
+        lastUsed: new Date(),
+      },
+    },
+    { upsert: true }
+  );
+};
 
 const app = express();
 
@@ -111,6 +188,7 @@ const memory = new BufferMemory({
   returnMessages: true,
   memoryKey: "chat_history",
   outputKey: "output",
+  maxMessageCount: 10, // Limit ostatnich 10 wiadomości
 });
 
 global.model = new ChatOpenAI({
@@ -147,6 +225,24 @@ app.get("/config", (req, res) => {
   });
 });
 
+// Endpoint do pobierania najczęściej zadawanych pytań
+app.get("/faq", async (req, res) => {
+  try {
+    const frequentQuestions = await questionsCollection
+      .find({})
+      .sort({ useCount: -1 })
+      .limit(10)
+      .toArray();
+
+    res.json(frequentQuestions);
+  } catch (error) {
+    res.status(500).json({
+      error: "Błąd podczas pobierania FAQ",
+      details: error.message,
+    });
+  }
+});
+
 app.post("/chat", validateChatInput, async (req, res) => {
   // Sprawdź błędy walidacji
   const errors = validationResult(req);
@@ -156,6 +252,13 @@ app.post("/chat", validateChatInput, async (req, res) => {
   try {
     const { message } = req.body;
     conversationStats.messageCount++;
+
+    // Sprawdź cache
+    const cachedResponse = await checkCache(message);
+    if (cachedResponse) {
+      console.log("\x1b[32m%s\x1b[0m", "\n=== ODPOWIEDŹ Z CACHE ===");
+      return res.json({ reply: cachedResponse });
+    }
     console.log("\x1b[36m%s\x1b[0m", "\n=== NOWE ZAPYTANIE ===");
     console.log(
       "\x1b[37m%s\x1b[0m",
@@ -218,6 +321,9 @@ app.post("/chat", validateChatInput, async (req, res) => {
       `Szacowana liczba tokenów: ~${finalTokenCount}`
     );
     console.log("\x1b[32m%s\x1b[0m", "===========================\n");
+
+    // Zapisz odpowiedź do cache'a
+    await saveToCache(message, finalResponse);
 
     res.json({ reply: finalResponse });
   } catch (error) {
@@ -289,6 +395,8 @@ app.post(
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
+  console.log("Połączono z Redis");
+  console.log("Połączono z MongoDB");
   console.log(`Serwer backend działa na porcie: ${PORT}`);
   console.log(`Temperatura modelu chatbota: ${chatbotConfig.temperature}`);
 });
