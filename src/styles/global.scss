@@ -122,6 +122,27 @@ button {
   font-family: inherit;
 }
 
+// Style dla list
+ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+
+  li::marker {
+    color: $color-primary;
+  }
+}
+
+ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+
+  li::marker {
+    background: $gradient-text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+}
+
 .container {
   width: 100%;
   max-width: $container-max-width;

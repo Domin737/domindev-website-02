@@ -137,7 +137,10 @@ const FloatingChat = () => {
                         <p className="paragraph" {...props} />
                       ),
                       ul: ({ node, ...props }) => (
-                        <ul className="list" {...props} />
+                        <ul className="list unordered" {...props} />
+                      ),
+                      ol: ({ node, ...props }) => (
+                        <ol className="list ordered" {...props} />
                       ),
                       li: ({ node, ...props }) => (
                         <li className="list-item" {...props} />
