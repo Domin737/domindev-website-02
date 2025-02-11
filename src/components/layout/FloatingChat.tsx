@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useContext } from "react";
+import React, { useState, useRef, useEffect, useContext } from "react";
 import axios from "axios";
 import { BiMessageDetail } from "react-icons/bi";
 import ReactMarkdown from "react-markdown";
@@ -10,16 +10,20 @@ interface ChatResponse {
   reply: string;
 }
 
+interface ChatMessage {
+  text: string | React.ReactNode;
+  user: string;
+  isTemperatureChange?: boolean;
+}
+
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
 const FloatingChat = () => {
-  const { addTemperatureListener } = useTemperature();
+  const { addTemperatureListener, temperature } = useTemperature();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<{ text: string; user: string }[]>(
-    []
-  );
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showLongLoadingMessage, setShowLongLoadingMessage] = useState(false);
   const loadingTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -28,23 +32,34 @@ const FloatingChat = () => {
 
   // Nasłuchuj na zmiany temperatury
   useEffect(() => {
-    // Funkcja wywoływana przy zmianie temperatury
     const handleTemperatureChange = () => {
+      const isCreative = temperature > 0.5;
+      const message = (
+        <div>
+          <div className="temperature-message">
+            <span className="temperature-icon">{isCreative ? "🎨" : "📝"}</span>
+            Zmieniono temperaturę modelu na: {temperature.toFixed(1)}
+          </div>
+          <div className="temperature-description">
+            {isCreative
+              ? "Odpowiedzi będą teraz bardziej kreatywne i zaskakujące."
+              : "Odpowiedzi będą teraz bardziej spójne i konkretne."}
+          </div>
+        </div>
+      );
+
       setMessages((prev) => [
         ...prev,
         {
-          text: "Zmieniono temperaturę modelu. Kolejne odpowiedzi będą dostosowane do nowego ustawienia.",
+          text: message,
           user: "Bot",
+          isTemperatureChange: true,
         },
       ]);
     };
 
-    // Zarejestruj nasłuchiwanie i zapisz funkcję czyszczącą
-    const unsubscribe = addTemperatureListener(handleTemperatureChange);
-
-    // Wyczyść nasłuchiwanie przy odmontowaniu komponentu
-    return () => unsubscribe();
-  }, [addTemperatureListener]);
+    return addTemperatureListener(handleTemperatureChange);
+  }, [addTemperatureListener, temperature]);
 
   // Reset stanu ładowania przy odmontowaniu komponentu
   useEffect(() => {
@@ -135,42 +150,46 @@ const FloatingChat = () => {
             {messages.map((msg, index) => (
               <div
                 key={index}
-                className={`message ${msg.user === "Ty" ? "user" : "bot"}`}
+                className={`message ${msg.user === "Ty" ? "user" : "bot"} ${
+                  msg.isTemperatureChange ? "temperature-change" : ""
+                }`}
               >
                 {msg.user === "Ty" ? (
                   msg.text
-                ) : (
+                ) : typeof msg.text === "string" ? (
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
                     components={{
-                      strong: ({ node, ...props }) => (
-                        <span className="keyword" {...props} />
+                      p: ({ children }) => (
+                        <div className="paragraph">{children}</div>
                       ),
-                      em: ({ node, ...props }) => (
-                        <span className="emphasis" {...props} />
+                      code: ({ children }) => (
+                        <span className="code-snippet">{children}</span>
                       ),
-                      code: ({ node, ...props }) => (
-                        <code className="code-snippet" {...props} />
+                      em: ({ children }) => (
+                        <span className="emphasis">{children}</span>
                       ),
-                      h3: ({ node, ...props }) => (
-                        <h3 className="section-header" {...props} />
+                      strong: ({ children }) => (
+                        <span className="keyword">{children}</span>
                       ),
-                      p: ({ node, ...props }) => (
-                        <p className="paragraph" {...props} />
+                      h3: ({ children }) => (
+                        <div className="section-header">{children}</div>
                       ),
-                      ul: ({ node, ...props }) => (
-                        <ul className="list unordered" {...props} />
+                      ul: ({ children }) => (
+                        <ul className="list unordered">{children}</ul>
                       ),
-                      ol: ({ node, ...props }) => (
-                        <ol className="list ordered" {...props} />
+                      ol: ({ children }) => (
+                        <ol className="list ordered">{children}</ol>
                       ),
-                      li: ({ node, ...props }) => (
-                        <li className="list-item" {...props} />
+                      li: ({ children }) => (
+                        <li className="list-item">{children}</li>
                       ),
                     }}
                   >
                     {msg.text}
                   </ReactMarkdown>
+                ) : (
+                  msg.text
                 )}
               </div>
             ))}
