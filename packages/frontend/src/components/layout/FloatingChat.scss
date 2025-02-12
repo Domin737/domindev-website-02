@@ -607,6 +607,35 @@
       min-height: 300px;
       max-height: 520px;
 
+      .messages-container {
+        padding: 12px;
+
+        .suggested-questions {
+          padding: 8px;
+          margin: 8px 0;
+          width: 100%;
+
+          .suggested-questions-header {
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+          }
+
+          .suggested-question {
+            padding: 10px;
+            font-size: 0.85rem;
+            width: 100%;
+            text-align: center;
+            white-space: normal;
+            word-wrap: break-word;
+          }
+        }
+
+        .message {
+          max-width: 85%;
+          font-size: 0.85rem;
+        }
+      }
+
       .chat-input-form {
         padding: 8px;
         gap: 6px;

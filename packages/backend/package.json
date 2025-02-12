@@ -1,5 +1,5 @@
 {
-  "name": "domindev-chatbot-backend",
+  "name": "@domindev-website-02/backend",
   "version": "1.0.0",
   "description": "Backend for DominDev chatbot using LangChain",
   "main": "index.mjs",
@@ -23,7 +23,7 @@
     "express-slow-down": "^2.0.3",
     "express-validator": "^7.2.1",
     "helmet": "^8.0.0",
-    "langchain": "^0.1.37",
+    "langchain": "^0.3.15",
     "mongodb": "^6.13.0",
     "redis": "^4.7.0"
   },
