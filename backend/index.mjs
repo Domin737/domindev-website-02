@@ -82,16 +82,52 @@ redisClient.on("error", (err) =>
   console.log("[Redis]: Redis Client Error", err)
 );
 
-// Połączenie z Redis
-await redisClient.connect().catch((err) => {
-  console.error("[Redis]: Błąd połączenia z Redis:", err);
-});
-
 // Klucze Redis
 const BANNED_WORDS_KEY = "banned_words";
 const QUESTION_KEY_PREFIX = "q:";
 const STATS_KEY_PREFIX = "stats:";
 const STATS_SORTED_SET = "question_stats";
+
+// Połączenie z Redis
+await redisClient.connect().catch((err) => {
+  console.error("[Redis]: Błąd połączenia z Redis:", err);
+});
+
+// Funkcja do czyszczenia starych kluczy cache i statystyk (opcjonalna)
+const cleanupOldData = async () => {
+  try {
+    console.log("[Redis]: Rozpoczynam czyszczenie starych danych...");
+
+    // Czyszczenie kluczy cache
+    const cacheKeys = await redisClient.keys(`${QUESTION_KEY_PREFIX}*`);
+    if (cacheKeys.length > 0) {
+      await redisClient.del(...cacheKeys);
+      console.log(
+        `[Redis]: Wyczyszczono ${cacheKeys.length} starych kluczy cache`
+      );
+    }
+
+    // Czyszczenie statystyk
+    const statsKeys = await redisClient.keys(`${STATS_KEY_PREFIX}*`);
+    if (statsKeys.length > 0) {
+      await redisClient.del(...statsKeys);
+      console.log(`[Redis]: Wyczyszczono ${statsKeys.length} kluczy statystyk`);
+    }
+
+    // Czyszczenie sorted set ze statystykami
+    await redisClient.del(STATS_SORTED_SET);
+    console.log("[Redis]: Wyczyszczono sorted set ze statystykami");
+
+    if (cacheKeys.length === 0 && statsKeys.length === 0) {
+      console.log("[Redis]: Brak starych danych do wyczyszczenia");
+    }
+  } catch (error) {
+    console.error("[Redis]: Błąd podczas czyszczenia danych:", error);
+  }
+};
+
+// Wyczyść stare dane podczas startu (opcjonalne)
+// await cleanupOldData();
 
 // Funkcja do pobierania zabronionych słów
 const getBannedWords = async () => {
@@ -170,38 +206,123 @@ const normalizeQuestion = (question) => {
   return question.toLowerCase().trim().replace(/\s+/g, " ");
 };
 
-// Funkcja do sprawdzania cache'a Redis
+// Maksymalna liczba różnych odpowiedzi w cache dla jednego pytania
+const MAX_CACHED_RESPONSES = 4;
+
+// Funkcja do sprawdzania cache'a Redis z rotacją odpowiedzi
 const checkCache = async (question) => {
   const normalizedQuestion = normalizeQuestion(question);
-  const cached = await redisClient.get(
-    `${QUESTION_KEY_PREFIX}${normalizedQuestion}`
-  );
-  if (cached) {
-    // Aktualizuj statystyki asynchronicznie
-    redisClient
-      .zIncrBy(STATS_SORTED_SET, 1, normalizedQuestion)
-      .catch((err) =>
-        console.error("[Redis]: Błąd aktualizacji statystyk:", err)
+  const cacheKey = `${QUESTION_KEY_PREFIX}${normalizedQuestion}`;
+
+  try {
+    // Sprawdź typ klucza cache
+    const cacheType = await redisClient.type(cacheKey);
+    if (cacheType !== "list") {
+      await redisClient.del(cacheKey);
+      return null;
+    }
+
+    // Pobierz listę odpowiedzi
+    const responses = await redisClient.lRange(cacheKey, 0, -1);
+
+    // Jeśli nie mamy jeszcze kompletu odpowiedzi, zwróć null aby wymusić generowanie nowej
+    if (!responses || responses.length < MAX_CACHED_RESPONSES) {
+      console.log("\n[Cache]: === GENEROWANIE NOWEJ ODPOWIEDZI ===");
+      console.log(
+        `[Cache]: Aktualnie w cache: ${
+          responses ? responses.length : 0
+        }/${MAX_CACHED_RESPONSES}`
       );
-    return JSON.parse(cached);
-  }
-  return null;
-};
+      return null;
+    }
 
-// Funkcja do zapisywania w cache'u
-const saveToCache = async (question, answer) => {
-  const normalizedQuestion = normalizeQuestion(question);
+    // Mamy komplet odpowiedzi - wykonaj rotację
+    const response = responses[0];
+    await redisClient.lPop(cacheKey);
+    await redisClient.rPush(cacheKey, response);
 
-  if (await isQuestionAppropriate(normalizedQuestion)) {
-    // Zapisz odpowiedź w cache na 24h
-    await redisClient.setEx(
-      `${QUESTION_KEY_PREFIX}${normalizedQuestion}`,
-      24 * 60 * 60,
-      JSON.stringify(answer)
+    try {
+      // Upewnij się, że klucz statystyk jest typu sorted set
+      const type = await redisClient.type(STATS_SORTED_SET);
+      if (type !== "zset") {
+        await redisClient.del(STATS_SORTED_SET);
+      }
+      // Aktualizuj statystyki
+      await redisClient.zIncrBy(STATS_SORTED_SET, 1, normalizedQuestion);
+    } catch (err) {
+      console.error("[Redis]: Błąd aktualizacji statystyk:", err);
+    }
+
+    console.log("\n[Cache]: === ODPOWIEDŹ Z CACHE (ROTACYJNEGO) ===");
+    console.log(
+      `[Cache]: Rotacja odpowiedzi ${responses.length}/${MAX_CACHED_RESPONSES}`
     );
 
-    // Dodaj do statystyk (sorted set)
-    await redisClient.zIncrBy(STATS_SORTED_SET, 1, normalizedQuestion);
+    return JSON.parse(response);
+  } catch (error) {
+    console.error("[Redis]: Błąd podczas sprawdzania cache:", error);
+    return null;
+  }
+};
+
+// Funkcja do zapisywania w cache'u z limitem różnych odpowiedzi
+const saveToCache = async (question, answer) => {
+  const normalizedQuestion = normalizeQuestion(question);
+  const cacheKey = `${QUESTION_KEY_PREFIX}${normalizedQuestion}`;
+
+  if (await isQuestionAppropriate(normalizedQuestion)) {
+    try {
+      // Sprawdź typ klucza cache
+      const cacheType = await redisClient.type(cacheKey);
+      if (cacheType !== "list") {
+        await redisClient.del(cacheKey);
+      }
+
+      // Sprawdź liczbę obecnie zapisanych odpowiedzi
+      const currentResponses = await redisClient.lLen(cacheKey);
+
+      // Zapisz nową odpowiedź tylko jeśli nie osiągnęliśmy jeszcze limitu
+      if (!currentResponses || currentResponses < MAX_CACHED_RESPONSES) {
+        // Sprawdź czy ta sama odpowiedź już nie istnieje
+        const existingResponses = await redisClient.lRange(cacheKey, 0, -1);
+        const isDuplicate = existingResponses.some(
+          (resp) => JSON.parse(resp) === answer
+        );
+
+        if (!isDuplicate) {
+          // Dodaj nową odpowiedź na koniec listy
+          await redisClient.rPush(cacheKey, JSON.stringify(answer));
+
+          // Ustaw czas wygaśnięcia dla całej listy
+          await redisClient.expire(cacheKey, 24 * 60 * 60);
+
+          console.log("\n[Cache]: === ZAPISANO NOWĄ ODPOWIEDŹ ===");
+          console.log(
+            `[Cache]: Aktualna liczba odpowiedzi: ${
+              (currentResponses || 0) + 1
+            }/${MAX_CACHED_RESPONSES}`
+          );
+        } else {
+          console.log("\n[Cache]: === POMINIĘTO DUPLIKAT ODPOWIEDZI ===");
+        }
+      } else {
+        console.log("\n[Cache]: === CACHE PEŁNY ===");
+        console.log(
+          `[Cache]: Osiągnięto limit ${MAX_CACHED_RESPONSES} odpowiedzi`
+        );
+      }
+
+      // Upewnij się, że klucz statystyk jest typu sorted set
+      const type = await redisClient.type(STATS_SORTED_SET);
+      if (type !== "zset") {
+        await redisClient.del(STATS_SORTED_SET);
+      }
+
+      // Dodaj do statystyk
+      await redisClient.zIncrBy(STATS_SORTED_SET, 1, normalizedQuestion);
+    } catch (error) {
+      console.error("[Redis]: Błąd podczas zapisywania do cache:", error);
+    }
   } else {
     console.log("\n[Cache]: === POMINIĘTO ZAPIS PYTANIA ===");
     console.log("[Cache]: Pytanie zawiera niedozwolone słowa");
@@ -269,6 +390,19 @@ const validateChatInput = [
     .escape(),
 ];
 
+// Endpoint do ręcznego czyszczenia cache
+app.post("/cache/clear", configLimiter, async (req, res) => {
+  try {
+    await cleanupOldData();
+    res.json({ message: "Cache został wyczyszczony" });
+  } catch (error) {
+    res.status(500).json({
+      error: "Błąd podczas czyszczenia cache",
+      details: error.message,
+    });
+  }
+});
+
 app.get("/config", (req, res) => {
   res.json({
     temperature: chatbotConfig.temperature,
@@ -292,13 +426,18 @@ app.get("/faq", async (req, res) => {
     const appropriateQuestions = [];
     for (const { score, value } of questions) {
       if (await isQuestionAppropriate(value)) {
-        const answer = await redisClient.get(`${QUESTION_KEY_PREFIX}${value}`);
-        if (answer) {
-          appropriateQuestions.push({
-            question: value,
-            answer: JSON.parse(answer),
-            useCount: score,
-          });
+        const cacheKey = `${QUESTION_KEY_PREFIX}${value}`;
+        const cacheType = await redisClient.type(cacheKey);
+
+        if (cacheType === "list") {
+          const answers = await redisClient.lRange(cacheKey, 0, -1);
+          if (answers && answers.length > 0) {
+            appropriateQuestions.push({
+              question: value,
+              answers: answers.map((answer) => JSON.parse(answer)),
+              useCount: score,
+            });
+          }
         }
       }
     }

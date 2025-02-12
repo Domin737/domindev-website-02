@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node index.mjs",
-    "dev": "nodemon index.mjs"
+    "dev": "nodemon index.mjs",
+    "clearRedisCache": "node scripts/redis/clear-cache.mjs"
   },
   "dependencies": {
     "@langchain/core": "^0.3.39",
