@@ -498,9 +498,11 @@ app.get("/faq", async (req, res) => {
     const appropriateQuestions = [];
     for (const { score, value } of questions) {
       if (await isQuestionAppropriate(value)) {
-        const cacheKey = `${QUESTION_KEY_PREFIX}${value}`;
+        // Pobierz odpowiedzi tylko dla aktualnej temperatury
+        const cacheKey = `${QUESTION_KEY_PREFIX}${value}_temp_${chatbotConfig.temperature}`;
         const cacheType = await redisClient.type(cacheKey);
 
+        // Zbierz odpowiedzi dla aktualnej temperatury
         if (cacheType === "list") {
           const answers = await redisClient.lRange(cacheKey, 0, -1);
           if (answers && answers.length > 0) {

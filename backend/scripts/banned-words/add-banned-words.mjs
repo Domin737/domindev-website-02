@@ -152,14 +152,14 @@ const filePath = args.find((arg) => !arg.startsWith("--"));
 if (!filePath) {
   console.error("Proszę podać ścieżkę do pliku ze słowami.");
   console.log(
-    "Użycie: node scripts/add-banned-words.mjs [--pause] data/nazwa-pliku.txt"
+    "Użycie: node ./scripts/banned-words/add-banned-words.mjs [--pause] ./scripts/banned-words/data/nazwa-pliku.txt"
   );
   console.log("Opcje:");
   console.log(
     "  --pause    Włącza 30-minutowe zatrzymanie po 3 nieudanych próbach"
   );
   console.log(
-    "\nPrzykład: node scripts/add-banned-words.mjs --pause data/example-banned-words.txt"
+    "\nPrzykład: node ./scripts/banned-words/add-banned-words.mjs --pause ./scripts/banned-words/data/banned-words.txt"
   );
   process.exit(1);
 }
