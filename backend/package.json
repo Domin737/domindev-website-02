@@ -7,7 +7,11 @@
   "scripts": {
     "start": "node index.mjs",
     "dev": "nodemon index.mjs",
-    "clearRedisCache": "node scripts/redis/clear-cache.mjs"
+    "redisCacheClear": "node scripts/redis/manage-cache.mjs clear",
+    "redisCacheClearAll": "node scripts/redis/manage-cache.mjs clear all",
+    "redisCacheClearExpired": "node scripts/redis/manage-cache.mjs clear expired",
+    "redisCacheClearTemp": "node scripts/redis/manage-cache.mjs clear temperature",
+    "redisCacheStats": "node scripts/redis/manage-cache.mjs stats"
   },
   "dependencies": {
     "@langchain/core": "^0.3.39",

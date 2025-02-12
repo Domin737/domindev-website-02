@@ -294,10 +294,10 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
                 <div className="long-loading-message">
                   <div className="loading-icon">⏳</div>
                   <div className="loading-text">
-                    Generuję obszerną odpowiedź...
+                    Generuję złożoną odpowiedź...
                     <br />
                     <span className="loading-subtext">
-                      To może potrwać kilka sekund
+                      To może potrwać kilka chwilę dłużej
                     </span>
                   </div>
                 </div>

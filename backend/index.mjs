@@ -210,9 +210,9 @@ const normalizeQuestion = (question) => {
 const MAX_CACHED_RESPONSES = 4;
 
 // Funkcja do sprawdzania cache'a Redis z rotacją odpowiedzi
-const checkCache = async (question) => {
+const checkCache = async (question, currentTemperature) => {
   const normalizedQuestion = normalizeQuestion(question);
-  const cacheKey = `${QUESTION_KEY_PREFIX}${normalizedQuestion}`;
+  const cacheKey = `${QUESTION_KEY_PREFIX}${normalizedQuestion}_temp_${currentTemperature}`;
 
   try {
     // Sprawdź typ klucza cache
@@ -266,9 +266,9 @@ const checkCache = async (question) => {
 };
 
 // Funkcja do zapisywania w cache'u z limitem różnych odpowiedzi
-const saveToCache = async (question, answer) => {
+const saveToCache = async (question, answer, currentTemperature) => {
   const normalizedQuestion = normalizeQuestion(question);
-  const cacheKey = `${QUESTION_KEY_PREFIX}${normalizedQuestion}`;
+  const cacheKey = `${QUESTION_KEY_PREFIX}${normalizedQuestion}_temp_${currentTemperature}`;
 
   if (await isQuestionAppropriate(normalizedQuestion)) {
     try {
@@ -293,8 +293,8 @@ const saveToCache = async (question, answer) => {
           // Dodaj nową odpowiedź na koniec listy
           await redisClient.rPush(cacheKey, JSON.stringify(answer));
 
-          // Ustaw czas wygaśnięcia dla całej listy
-          await redisClient.expire(cacheKey, 24 * 60 * 60);
+          // Ustaw czas wygaśnięcia dla całej listy (30 dni)
+          await redisClient.expire(cacheKey, 30 * 24 * 60 * 60);
 
           console.log("\n[Cache]: === ZAPISANO NOWĄ ODPOWIEDŹ ===");
           console.log(
@@ -391,17 +391,89 @@ const validateChatInput = [
 ];
 
 // Endpoint do ręcznego czyszczenia cache
-app.post("/cache/clear", configLimiter, async (req, res) => {
-  try {
-    await cleanupOldData();
-    res.json({ message: "Cache został wyczyszczony" });
-  } catch (error) {
-    res.status(500).json({
-      error: "Błąd podczas czyszczenia cache",
-      details: error.message,
-    });
+app.post(
+  "/cache/clear",
+  configLimiter,
+  [
+    body("strategy")
+      .optional()
+      .isIn(["all", "temperature", "expired"])
+      .withMessage("Nieprawidłowa strategia czyszczenia"),
+    body("temperature")
+      .optional()
+      .isFloat({ min: 0, max: 1 })
+      .withMessage("Temperatura musi być wartością między 0 a 1"),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+      const { strategy = "expired", temperature } = req.body;
+
+      let clearedKeys = 0;
+
+      switch (strategy) {
+        case "all":
+          // Wyczyść wszystkie dane cache
+          const allKeys = await redisClient.keys(`${QUESTION_KEY_PREFIX}*`);
+          if (allKeys.length > 0) {
+            await redisClient.del(...allKeys);
+            clearedKeys = allKeys.length;
+          }
+          break;
+
+        case "temperature":
+          // Wyczyść cache tylko dla konkretnej temperatury
+          if (temperature === undefined) {
+            return res.status(400).json({
+              error:
+                "Parametr temperature jest wymagany dla strategii temperature",
+            });
+          }
+          const tempKeys = await redisClient.keys(
+            `${QUESTION_KEY_PREFIX}*_temp_${temperature}`
+          );
+          if (tempKeys.length > 0) {
+            await redisClient.del(...tempKeys);
+            clearedKeys = tempKeys.length;
+          }
+          break;
+
+        case "expired":
+          // Domyślnie - usuń tylko wygasłe klucze
+          const allCacheKeys = await redisClient.keys(
+            `${QUESTION_KEY_PREFIX}*`
+          );
+          for (const key of allCacheKeys) {
+            const ttl = await redisClient.ttl(key);
+            if (ttl <= 0) {
+              await redisClient.del(key);
+              clearedKeys++;
+            }
+          }
+          break;
+      }
+
+      console.log(
+        `[Cache]: Wyczyszczono ${clearedKeys} kluczy cache (strategia: ${strategy})`
+      );
+      res.json({
+        message: "Cache został wyczyszczony",
+        strategy,
+        clearedKeys,
+      });
+    } catch (error) {
+      console.error("[Cache]: Błąd podczas czyszczenia cache:", error);
+      res.status(500).json({
+        error: "Błąd podczas czyszczenia cache",
+        details: error.message,
+      });
+    }
   }
-});
+);
 
 app.get("/config", (req, res) => {
   res.json({
@@ -467,7 +539,7 @@ app.post("/chat", validateChatInput, async (req, res) => {
       });
     }
 
-    const cachedResponse = await checkCache(message);
+    const cachedResponse = await checkCache(message, chatbotConfig.temperature);
     if (cachedResponse) {
       console.log("\n[Cache]: === ODPOWIEDŹ Z CACHE ===");
       return res.json({ reply: cachedResponse });
@@ -499,7 +571,7 @@ app.post("/chat", validateChatInput, async (req, res) => {
     console.log(`[ChatBot]: Szacowana liczba tokenów: ~${finalTokenCount}`);
     console.log("[ChatBot]: ===========================\n");
 
-    await saveToCache(message, finalResponse);
+    await saveToCache(message, finalResponse, chatbotConfig.temperature);
     res.json({ reply: finalResponse });
   } catch (error) {
     console.log("\n[Error]: === BŁĄD PRZETWARZANIA ===");
@@ -520,7 +592,7 @@ app.post(
       .isFloat({ min: 0, max: 1 })
       .withMessage("Temperatura musi być wartością między 0 a 1"),
   ],
-  (req, res) => {
+  async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
