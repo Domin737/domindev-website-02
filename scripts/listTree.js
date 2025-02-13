@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 
-// Lista katalogów do pominięcia – dodaj tu te, które nie chcesz widzieć w wyniku
+// Lista katalogów do pominięcia – możesz rozszerzyć według potrzeb
 const skipFolders = [
   "node_modules",
   ".git",
@@ -13,15 +13,15 @@ const skipFolders = [
 ];
 
 /**
- * Funkcja generująca strukturę drzewa katalogów jako string.
+ * Rekurencyjnie generuje strukturę drzewa katalogów jako string.
  * @param {string} dir - katalog startowy
- * @param {string} prefix - prefiks dla formatowania (drzewo)
+ * @param {string} prefix - prefiks (do formatowania drzewa)
  * @returns {string} - wynikowy string z drzewem katalogów
  */
 function generateTree(dir, prefix = "") {
   let treeStr = "";
 
-  // Jeśli bieżący katalog znajduje się na liście pomijanych, zwracamy pusty string
+  // Jeśli aktualny katalog ma nazwę, którą chcemy pominąć, zwróć pusty string
   if (skipFolders.includes(path.basename(dir))) {
     return treeStr;
   }
@@ -33,7 +33,7 @@ function generateTree(dir, prefix = "") {
     return treeStr;
   }
 
-  // Filtrujemy wpisy, które mają być pominięte
+  // Filtrujemy elementy, które mają być pominięte
   items = items.filter((item) => !skipFolders.includes(item));
 
   items.forEach((item, index) => {
@@ -50,25 +50,26 @@ function generateTree(dir, prefix = "") {
   return treeStr;
 }
 
-// Generujemy strukturę drzewa zaczynając od bieżącego katalogu roboczego
-const treeOutput = generateTree(process.cwd());
+// Katalog główny projektu (rodzic katalogu "scripts")
+const rootDir = path.resolve(__dirname, "..");
 
-// Upewniamy się, że katalog backup istnieje – jeśli nie, tworzymy go
-const backupDir = path.join(process.cwd(), "backup");
+// Generujemy strukturę drzewa zaczynając od katalogu głównego projektu
+const treeOutput = generateTree(rootDir);
+
+// Ustawiamy katalog backup, w którym ma być zapisany plik, na "scripts/backup"
+const backupDir = path.join(__dirname, "backup");
 if (!fs.existsSync(backupDir)) {
   fs.mkdirSync(backupDir);
 }
 
-// Funkcja pomocnicza do dodawania zer wiodących
+// Pomocnicza funkcja do formatowania czasu
 const pad = (num) => String(num).padStart(2, "0");
-
-// Generowanie znacznika czasu w formacie YYYY-MM-DD_HH-MM-SS
 const now = new Date();
 const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
   now.getDate()
 )}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
 
-// Tworzymy nazwę pliku, np. listTree_2025-02-07_13-19-22.txt
+// Nazwa pliku wynikowego
 const fileName = `listTree_${timestamp}.txt`;
 const filePath = path.join(backupDir, fileName);
 
