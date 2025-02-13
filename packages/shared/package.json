@@ -1,0 +1,16 @@
+{
+  "name": "@domindev-website-02/shared",
+  "version": "1.0.0",
+  "description": "Shared types and utilities for DominDev website",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

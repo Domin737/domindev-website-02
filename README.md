@@ -14,15 +14,28 @@ domindev-website-02/
 │   │   ├── public/       # Static assets
 │   │   └── package.json  # Frontend dependencies
 │   │
-│   └── backend/          # Node.js backend server
+│   ├── backend/          # Node.js backend server
+│   │   ├── src/          # Source code
+│   │   ├── scripts/      # Utility scripts
+│   │   └── package.json  # Backend dependencies
+│   │
+│   └── shared/           # Shared types and utilities
 │       ├── src/          # Source code
-│       ├── scripts/      # Utility scripts
-│       └── package.json  # Backend dependencies
+│       │   ├── types/    # Shared TypeScript types/interfaces
+│       │   └── utils/    # Common utility functions
+│       └── package.json  # Shared module dependencies
 │
 └── package.json          # Root package.json with workspaces config
 ```
 
 ## Technologies Used
+
+### Shared Module
+
+- TypeScript types and interfaces
+- Common utility functions
+- Shared validation logic
+- Type-safe communication between frontend and backend
 
 ### Frontend
 
@@ -39,6 +52,19 @@ domindev-website-02/
 - LangChain
 - Redis for caching
 - MongoDB
+
+#### Backend Structure
+
+- `src/controllers/` - Kontrolery obsługujące logikę biznesową
+  - `chatController.mjs` - Obsługa chatu i integracji z LangChain
+  - `moderationController.mjs` - System moderacji i zarządzania zabronionymi słowami
+  - `cacheController.mjs` - Zarządzanie pamięcią podręczną Redis
+- `src/routes/` - Routery Express.js definiujące endpointy API
+  - `chatRoutes.mjs` - Endpointy związane z chatem
+  - `moderationRoutes.mjs` - Endpointy moderacji
+  - `cacheRoutes.mjs` - Endpointy zarządzania cache'm
+- `src/services/` - Serwisy i integracje z zewnętrznymi systemami
+- `src/utils/` - Funkcje pomocnicze
 
 ## Development
 
@@ -74,9 +100,10 @@ npm run dev:backend
 
 ### Building for Production
 
-Build both packages:
+Build all packages:
 
 ```bash
+npm run build:shared   # Build shared module first
 npm run build:frontend
 npm run build:backend
 ```
@@ -105,6 +132,7 @@ npm run build:backend
 ### Root Directory
 
 - `npm run install:all` - Install all dependencies
+- `npm run build:shared` - Build shared module
 - `npm run dev:frontend` - Start frontend development server
 - `npm run dev:backend` - Start backend development server
 - `npm run build:frontend` - Build frontend for production
