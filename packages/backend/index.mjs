@@ -11,11 +11,18 @@ import {
   CacheController,
 } from "./src/controllers/index.mjs";
 
+import { CacheService } from "./src/services/cacheService.mjs";
+
 import {
   createChatRouter,
   createModerationRouter,
   createCacheRouter,
 } from "./src/routes/index.mjs";
+
+import {
+  errorHandler,
+  notFoundHandler,
+} from "./src/middleware/errorHandler.mjs";
 
 const app = express();
 
@@ -58,15 +65,22 @@ await redisClient.connect().catch((err) => {
   console.error("[Redis]: Błąd połączenia z Redis:", err);
 });
 
+// Inicjalizacja serwisów
+const cacheService = new CacheService(redisClient);
+
 // Inicjalizacja kontrolerów
 const chatController = new ChatController(redisClient);
 const moderationController = new ModerationController(redisClient);
-const cacheController = new CacheController(redisClient);
+const cacheController = new CacheController(cacheService);
 
 // Konfiguracja routerów
 app.use(createChatRouter(chatController, moderationController));
 app.use(createModerationRouter(moderationController));
 app.use(createCacheRouter(cacheController));
+
+// Obsługa błędów
+app.use(notFoundHandler); // 404 dla nieistniejących endpointów
+app.use(errorHandler); // Globalny handler błędów
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {

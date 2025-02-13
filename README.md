@@ -55,16 +55,35 @@ domindev-website-02/
 
 #### Backend Structure
 
-- `src/controllers/` - Kontrolery obsługujące logikę biznesową
-  - `chatController.mjs` - Obsługa chatu i integracji z LangChain
-  - `moderationController.mjs` - System moderacji i zarządzania zabronionymi słowami
-  - `cacheController.mjs` - Zarządzanie pamięcią podręczną Redis
+- `src/controllers/` - Kontrolery obsługujące żądania HTTP
+  - `chatController.mjs` - Obsługa żądań związanych z chatem
+  - `moderationController.mjs` - Obsługa żądań moderacji
+  - `cacheController.mjs` - Obsługa żądań zarządzania cache'm
+- `src/services/` - Warstwa serwisów zawierająca logikę biznesową
+  - `cacheService.mjs` - Logika zarządzania pamięcią podręczną Redis
+  - (kolejne serwisy będą dodawane w miarę refaktoryzacji)
 - `src/routes/` - Routery Express.js definiujące endpointy API
   - `chatRoutes.mjs` - Endpointy związane z chatem
   - `moderationRoutes.mjs` - Endpointy moderacji
   - `cacheRoutes.mjs` - Endpointy zarządzania cache'm
-- `src/services/` - Serwisy i integracje z zewnętrznymi systemami
+- `src/middleware/` - Middleware Express.js
+  - `errorHandler.mjs` - Globalna obsługa błędów i formatowanie odpowiedzi
 - `src/utils/` - Funkcje pomocnicze
+- `src/config/` - Pliki konfiguracyjne
+
+#### Architektura Backendu
+
+Backend został zorganizowany w warstwową architekturę:
+
+1. **Warstwa Routingu** (routes) - Definiuje endpointy API i podstawową walidację
+2. **Warstwa Middleware** - Obsługuje aspekty przekrojowe (cross-cutting concerns):
+   - Obsługa błędów
+   - Walidacja żądań
+   - Rate limiting
+   - Bezpieczeństwo
+3. **Warstwa Kontrolerów** - Przetwarza żądania HTTP i koordynuje odpowiedzi
+4. **Warstwa Serwisów** - Zawiera główną logikę biznesową aplikacji
+5. **Warstwa Konfiguracji** - Zarządza ustawieniami aplikacji
 
 ## Development
 
@@ -126,6 +145,8 @@ npm run build:backend
 - Redis caching for improved performance
 - Rate limiting and security measures
 - Moderation system for chat content
+- Globalna obsługa błędów i spójne formatowanie odpowiedzi
+- Warstwowa architektura dla lepszej organizacji kodu
 
 ## Available Scripts
 
