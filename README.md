@@ -53,6 +53,19 @@ domindev-website-02/
 - Redis for caching
 - MongoDB
 
+#### Backend Structure
+
+- `src/controllers/` - Kontrolery obsługujące logikę biznesową
+  - `chatController.mjs` - Obsługa chatu i integracji z LangChain
+  - `moderationController.mjs` - System moderacji i zarządzania zabronionymi słowami
+  - `cacheController.mjs` - Zarządzanie pamięcią podręczną Redis
+- `src/routes/` - Routery Express.js definiujące endpointy API
+  - `chatRoutes.mjs` - Endpointy związane z chatem
+  - `moderationRoutes.mjs` - Endpointy moderacji
+  - `cacheRoutes.mjs` - Endpointy zarządzania cache'm
+- `src/services/` - Serwisy i integracje z zewnętrznymi systemami
+- `src/utils/` - Funkcje pomocnicze
+
 ## Development
 
 ### Prerequisites
