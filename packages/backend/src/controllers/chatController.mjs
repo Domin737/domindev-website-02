@@ -137,13 +137,13 @@ export class ChatController {
       const { temperature, max_tokens } = req.body;
 
       if (temperature !== undefined) {
-        if (temperature < 0 || temperature > 2) {
+        if (temperature < 0 || temperature > 1) {
           throw new AppError(
-            "Temperatura musi być wartością między 0 a 2",
+            "Temperatura musi być wartością między 0 a 1",
             400,
             {
               code: ChatErrorCode.INVALID_TEMPERATURE,
-              details: { temperature, min: 0, max: 2 },
+              details: { temperature, min: 0, max: 1 },
             }
           );
         }
