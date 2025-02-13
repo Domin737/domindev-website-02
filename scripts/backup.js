@@ -1,9 +1,8 @@
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
+const fs = require("fs").promises;
+const path = require("path");
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Ustal katalog główny projektu jako rodzic katalogu "scripts"
+const projectRoot = path.resolve(__dirname, "..");
 
 // Lista katalogów i plików, które zawsze powinny być pomijane
 const ALWAYS_IGNORE = [
@@ -12,8 +11,8 @@ const ALWAYS_IGNORE = [
   ".gitignore", // pomijamy plik .gitignore
   ".DS_Store",
   "Thumbs.db",
-  "backup",
-  "backup.js",
+  "backup", // pomijamy folder backup (bez względu na to, gdzie się znajduje)
+  "backup.js", // pomijamy skrypt backup.js
 ];
 
 // Lista rozszerzeń plików binarnych, które powinny być pomijane
@@ -37,11 +36,11 @@ const BINARY_EXTENSIONS = [
   ".dat",
 ];
 
-// Funkcja odczytująca i parsująca .gitignore dynamicznie
+// Funkcja odczytująca i parsująca .gitignore z katalogu głównego
 async function readGitignore() {
   try {
     const content = await fs.readFile(
-      path.join(__dirname, ".gitignore"),
+      path.join(projectRoot, ".gitignore"),
       "utf-8"
     );
     return content
@@ -54,7 +53,7 @@ async function readGitignore() {
   }
 }
 
-// Funkcja sprawdzająca czy plik jest binarny na podstawie rozszerzenia
+// Funkcja sprawdzająca, czy plik ma rozszerzenie binarne
 function isBinaryFile(filePath) {
   const ext = path.extname(filePath).toLowerCase();
   // Pliki .scss traktujemy jako tekstowe
@@ -66,30 +65,29 @@ function isBinaryFile(filePath) {
 
 /**
  * Funkcja sprawdzająca, czy dany plik lub katalog powinien być pominięty.
- * Teraz, jeśli plik ma rozszerzenie .scss lub .svg i nie znajduje się w krytycznych katalogach
- * (node_modules, .git, backup), to nie jest ignorowany nawet jeśli pasuje do reguł.
+ * Dla plików .scss i .svg – jeżeli nie leżą w krytycznych katalogach, nie są ignorowane.
  */
 async function shouldIgnore(filePath, ignorePatterns) {
   const ext = path.extname(filePath).toLowerCase();
-  const relativePath = path.relative(__dirname, filePath);
+  // Używamy projectRoot jako bazy do obliczania ścieżki względnej
+  const relativePath = path.relative(projectRoot, filePath);
   const segments = relativePath.split(path.sep);
 
-  // Definiujemy katalogi, których absolutnie nie chcemy przetwarzać, niezależnie od rozszerzenia
+  // Katalogi, których absolutnie nie chcemy przetwarzać
   const forcedIgnoreDirs = [".git", "node_modules", "backup"];
 
-  // Jeśli plik ma rozszerzenie .scss lub .svg, sprawdzamy, czy nie leży w katalogach krytycznych
+  // Jeśli plik ma rozszerzenie .scss lub .svg, sprawdzamy czy leży w krytycznych katalogach
   if (ext === ".scss" || ext === ".svg") {
     const isInForcedDir = segments.some((segment) =>
       forcedIgnoreDirs.includes(segment)
     );
     if (!isInForcedDir) {
-      // Plik .scss lub .svg poza krytycznymi katalogami – nie ignorujemy go
+      // Plik .scss lub .svg poza krytycznymi – nie ignorujemy go
       return false;
     }
-    // Jeśli leży w katalogu krytycznym, pozostaje ignorowany.
   }
 
-  // Standardowe sprawdzanie – jeżeli którakolwiek część ścieżki znajduje się w ALWAYS_IGNORE, pomijamy plik/katalog
+  // Jeżeli którakolwiek część ścieżki znajduje się w ALWAYS_IGNORE, pomijamy plik/katalog
   if (segments.some((segment) => ALWAYS_IGNORE.includes(segment))) {
     return true;
   }
@@ -114,6 +112,7 @@ async function shouldIgnore(filePath, ignorePatterns) {
 }
 
 // Funkcja rekurencyjnie odczytująca pliki (pomijając ignorowane katalogi/pliki)
+// Obliczamy ścieżki względne względem projectRoot
 async function readFilesRecursively(dir, ignorePatterns) {
   const results = [];
   let files;
@@ -145,14 +144,14 @@ async function readFilesRecursively(dir, ignorePatterns) {
       // Pomijamy pliki binarne
       if (isBinaryFile(filePath)) {
         console.log(
-          `Pomijanie pliku binarnego: ${path.relative(__dirname, filePath)}`
+          `Pomijanie pliku binarnego: ${path.relative(projectRoot, filePath)}`
         );
         continue;
       }
       try {
         const content = await fs.readFile(filePath, "utf-8");
         results.push({
-          path: path.relative(__dirname, filePath),
+          path: path.relative(projectRoot, filePath),
           content,
         });
       } catch (error) {
@@ -163,8 +162,9 @@ async function readFilesRecursively(dir, ignorePatterns) {
   return results;
 }
 
-// Funkcja analizująca strukturę projektu
-async function analyzeProjectStructure(dir, indent = "", ignorePatterns) {
+// Funkcja analizująca strukturę projektu, budując drzewo katalogów i plików
+// Obliczamy ścieżki względne względem projectRoot
+async function analyzeProjectStructure(dir, prefix = "", ignorePatterns) {
   let structure = "";
   let items;
   try {
@@ -174,11 +174,20 @@ async function analyzeProjectStructure(dir, indent = "", ignorePatterns) {
     return structure;
   }
 
+  // Filtrujemy i sortujemy elementy
+  const filteredItems = [];
   for (const item of items.sort()) {
     const itemPath = path.join(dir, item);
-    if (await shouldIgnore(itemPath, ignorePatterns)) {
-      continue;
+    if (!(await shouldIgnore(itemPath, ignorePatterns))) {
+      filteredItems.push(item);
     }
+  }
+
+  for (let i = 0; i < filteredItems.length; i++) {
+    const item = filteredItems[i];
+    const itemPath = path.join(dir, item);
+    const isLast = i === filteredItems.length - 1;
+    const pointer = isLast ? "└── " : "├── ";
 
     let stat;
     try {
@@ -188,26 +197,25 @@ async function analyzeProjectStructure(dir, indent = "", ignorePatterns) {
       continue;
     }
 
-    const relativePath = path.relative(__dirname, itemPath);
+    const isBinary = isBinaryFile(itemPath);
+    structure += `${prefix}${pointer}${item}${isBinary ? " (binary)" : ""}\n`;
+
     if (stat.isDirectory()) {
-      structure += `${indent}${relativePath}/\n`;
+      const newPrefix = prefix + (isLast ? "    " : "│   ");
       structure += await analyzeProjectStructure(
         itemPath,
-        indent + "  ",
+        newPrefix,
         ignorePatterns
       );
-    } else {
-      const isBinary = isBinaryFile(itemPath);
-      structure += `${indent}${relativePath}${isBinary ? " (binary)" : ""}\n`;
     }
   }
   return structure;
 }
 
-// Funkcja tworząca backup z dynamicznym ładowaniem danych
+// Główna funkcja tworząca backup
 async function createBackup() {
   try {
-    // Utwórz katalog backup, jeśli nie istnieje
+    // Ustawiamy backupDir jako katalog "backup" w obrębie katalogu "scripts"
     const backupDir = path.join(__dirname, "backup");
     try {
       await fs.access(backupDir);
@@ -215,7 +223,7 @@ async function createBackup() {
       await fs.mkdir(backupDir);
     }
 
-    // Dynamiczne odczytanie zawartości .gitignore (służy tylko do ignorowania plików)
+    // Dynamiczne odczytanie zawartości .gitignore (z katalogu głównego)
     const ignorePatterns = await readGitignore();
 
     // Generowanie nazwy pliku backup na podstawie aktualnej daty i lokalnego czasu
@@ -228,9 +236,9 @@ async function createBackup() {
     const backupFileName = `backup_${localTime}.txt`;
     const backupPath = path.join(backupDir, backupFileName);
 
-    // Przygotowanie zawartości backupu (struktura projektu + nagłówek sekcji plików)
+    // Przygotowanie zawartości backupu (nagłówek, struktura projektu, zawartość plików)
     const structure = await analyzeProjectStructure(
-      __dirname,
+      projectRoot,
       "",
       ignorePatterns
     );
@@ -246,17 +254,13 @@ async function createBackup() {
 
     // Skanowanie plików do backupu
     console.log("Rozpoczęcie skanowania plików...");
-    const files = await readFilesRecursively(__dirname, ignorePatterns);
+    const files = await readFilesRecursively(projectRoot, ignorePatterns);
     console.log(`Znaleziono ${files.length} plików do backupu.`);
 
-    // Dla każdego pliku dodajemy nagłówek z informacjami o pliku (lokalizacja, nazwa, rozszerzenie)
+    // Dla każdego pliku dodajemy tylko ścieżkę względną jako nagłówek
     const filesContent = files
       .map((file) => {
-        const fileName = path.basename(file.path);
-        const fileExt = path.extname(file.path);
-        const fileDir = path.dirname(file.path);
-        const header = `// Lokalizacja: ${fileDir}\n// Nazwa pliku: ${fileName}\n// Rozszerzenie: ${fileExt}\n`;
-        return `${header}${file.content}\n\n`;
+        return `// ${file.path}\n${file.content}\n\n`;
       })
       .join("\n");
 
@@ -270,5 +274,5 @@ async function createBackup() {
   }
 }
 
-// Uruchomienie backupu
+// Uruchomienie funkcji tworzącej backup
 createBackup();

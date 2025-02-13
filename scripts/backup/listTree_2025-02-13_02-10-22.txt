@@ -1,8 +1,6 @@
 ├── .env
 ├── .gitattributes
 ├── .gitignore
-├── backup.js
-├── listTree.js
 ├── package-lock.json
 ├── package.json
 ├── packages
@@ -32,42 +30,31 @@
 │   │       │   ├── chatController.mjs
 │   │       │   ├── index.mjs
 │   │       │   └── moderationController.mjs
-│   │       ├── middleware
-│   │       ├── models
-│   │       ├── routes
-│   │       │   ├── cacheRoutes.mjs
-│   │       │   ├── chatRoutes.mjs
-│   │       │   ├── index.mjs
-│   │       │   └── moderationRoutes.mjs
-│   │       ├── services
-│   │       │   ├── cache
-│   │       │   ├── chat
-│   │       │   └── moderation
-│   │       └── utils
+│   │       └── routes
+│   │           ├── cacheRoutes.mjs
+│   │           ├── chatRoutes.mjs
+│   │           ├── index.mjs
+│   │           └── moderationRoutes.mjs
 │   ├── frontend
 │   │   ├── eslint.config.js
 │   │   ├── index.html
 │   │   ├── package-lock.json
 │   │   ├── package.json
 │   │   ├── public
-│   │   │   ├── images
-│   │   │   │   ├── favicon.svg
-│   │   │   │   ├── logos
-│   │   │   │   │   ├── logo-domindev-black-transparentbg-1448x1448.svg
-│   │   │   │   │   ├── logo-domindev-black-transparentbg-362x362.svg
-│   │   │   │   │   ├── logo-domindev-black-transparentbg-724x724.svg
-│   │   │   │   │   ├── logo-domindev-white-transparentbg-1448x1448.svg
-│   │   │   │   │   ├── logo-domindev-white-transparentbg-362x362.svg
-│   │   │   │   │   └── logo-domindev-white-transparentbg-724x724.svg
-│   │   │   │   ├── mockup.svg
-│   │   │   │   └── portfolio
-│   │   │   └── vite.svg
+│   │   │   └── images
+│   │   │       ├── favicon.svg
+│   │   │       ├── logos
+│   │   │       │   ├── logo-domindev-black-transparentbg-1448x1448.svg
+│   │   │       │   ├── logo-domindev-black-transparentbg-362x362.svg
+│   │   │       │   ├── logo-domindev-black-transparentbg-724x724.svg
+│   │   │       │   ├── logo-domindev-white-transparentbg-1448x1448.svg
+│   │   │       │   ├── logo-domindev-white-transparentbg-362x362.svg
+│   │   │       │   └── logo-domindev-white-transparentbg-724x724.svg
+│   │   │       ├── mockup.svg
+│   │   │       └── portfolio
 │   │   ├── src
 │   │   │   ├── App.tsx
-│   │   │   ├── assets
-│   │   │   │   └── react.svg
 │   │   │   ├── components
-│   │   │   │   ├── common
 │   │   │   │   ├── layout
 │   │   │   │   │   ├── AccentColorToggle.scss
 │   │   │   │   │   ├── AccentColorToggle.tsx
@@ -117,10 +104,7 @@
 │   │   │   │   ├── global.scss
 │   │   │   │   └── _variables.scss
 │   │   │   └── vite-env.d.ts
-│   │   ├── tsconfig.app.json
 │   │   ├── tsconfig.json
-│   │   ├── tsconfig.node.json
-│   │   ├── tsconfig.node.tsbuildinfo
 │   │   ├── tsconfig.tsbuildinfo
 │   │   ├── vite.config.d.ts
 │   │   ├── vite.config.js
@@ -136,5 +120,9 @@
 │       │   └── utils
 │       │       ├── index.ts
 │       │       └── validation.ts
-│       └── tsconfig.json
-└── README.md
+│       ├── tsconfig.json
+│       └── tsconfig.tsbuildinfo
+├── README.md
+└── scripts
+    ├── backup.js
+    └── listTree.js
