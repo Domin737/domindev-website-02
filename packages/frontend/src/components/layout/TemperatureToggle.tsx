@@ -1,12 +1,9 @@
 import { useState, useRef, memo, useContext, useEffect, FC } from "react";
-import axios from "axios";
 import toast from "react-hot-toast";
 import { ThemeContext } from "../../contexts/ThemeContext";
 import { useTemperature } from "../../contexts/TemperatureContext";
 import { useThemeColors } from "../../hooks/useThemeColors";
 import "./TemperatureToggle.scss";
-
-const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
 interface TemperatureToggleProps {
   onTemperatureChange?: () => void;
@@ -33,10 +30,15 @@ const TemperatureToggle = ({
 }: TemperatureToggleProps) => {
   const { theme } = useContext(ThemeContext);
   useThemeColors(theme);
-  const { temperature, setTemperature, onTemperatureChange } = useTemperature();
+  const { temperature, updateTemperature } = useTemperature();
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [localTemperature, setLocalTemperature] = useState(temperature);
   const toggleRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setLocalTemperature(temperature);
+  }, [temperature]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -45,6 +47,7 @@ const TemperatureToggle = ({
         !toggleRef.current.contains(event.target as Node)
       ) {
         setIsOpen(false);
+        setLocalTemperature(temperature); // Reset to current temperature
       }
     };
 
@@ -52,27 +55,27 @@ const TemperatureToggle = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [temperature]);
 
-  const updateTemperature = async () => {
+  const handleTemperatureUpdate = async () => {
     try {
       setIsSaving(true);
-      await axios.post(`${API_URL}/update-config`, { temperature });
+      await updateTemperature(localTemperature);
       const message =
-        temperature > 0.5
+        localTemperature > 0.5
           ? "↗️ Zwiększono kreatywność odpowiedzi"
           : "↘️ Ustawiono bardziej konkretne odpowiedzi";
       toast.success(message, {
         id: "temperature-update",
       });
-      setIsOpen(false); // Zamknij panel po zapisaniu
-      onTemperatureChange(); // Wywołaj funkcję zmiany temperatury z kontekstu
-      propOnTemperatureChange?.(); // Wywołaj funkcję zmiany temperatury z propsów, jeśli istnieje
+      setIsOpen(false);
+      propOnTemperatureChange?.();
     } catch (error) {
       console.error("Błąd podczas aktualizacji temperatury:", error);
       toast.error("Błąd podczas aktualizacji temperatury", {
         id: "temperature-error",
       });
+      setLocalTemperature(temperature); // Reset to current temperature on error
     } finally {
       setIsSaving(false);
     }
@@ -100,26 +103,28 @@ const TemperatureToggle = ({
             <div className="temperature-control__inputs">
               <label>
                 <span className="temperature-value">
-                  {temperature.toFixed(1)}
+                  {localTemperature.toFixed(1)}
                 </span>
                 <input
                   type="range"
                   min="0"
                   max="1"
                   step="0.1"
-                  value={temperature}
-                  onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                  value={localTemperature}
+                  onChange={(e) =>
+                    setLocalTemperature(parseFloat(e.target.value))
+                  }
                   style={{
                     background: `linear-gradient(to right, var(--color-primary) 0%, var(--color-primary) ${
-                      temperature * 100
+                      localTemperature * 100
                     }%, var(--color-background-darker) ${
-                      temperature * 100
+                      localTemperature * 100
                     }%, var(--color-background-darker) 100%)`,
                   }}
                 />
               </label>
               <button
-                onClick={updateTemperature}
+                onClick={handleTemperatureUpdate}
                 disabled={isSaving}
                 className="save-button"
                 title="Zapisz temperaturę"

@@ -1,127 +1,99 @@
 import express from "express";
-import { body, validationResult } from "express-validator";
-import rateLimit from "express-rate-limit";
+import { body, query, validationResult } from "express-validator";
+import { ChatErrorCode } from "@domindev-website-02/shared/dist/types/chat.js";
+import { AppError } from "../middleware/errorHandler.mjs";
 
-const router = express.Router();
+const validateRequest = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    const firstError = errors.array()[0];
+    const code = firstError.msg.includes("długa")
+      ? ChatErrorCode.MESSAGE_TOO_LONG
+      : ChatErrorCode.EMPTY_MESSAGE;
+    throw new AppError(firstError.msg, 400, {
+      code,
+      details: { validation: errors.array() },
+    });
+  }
+  next();
+};
 
-// Rate limiting dla endpointów
-const configLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 10,
-  message: "Przekroczono limit prób aktualizacji konfiguracji.",
-});
+export const createChatRouter = (chatController, moderationController) => {
+  const router = express.Router();
 
-const validateChatInput = [
-  body("message")
-    .trim()
-    .notEmpty()
-    .withMessage("Wiadomość nie może być pusta")
-    .isLength({ max: 1000 })
-    .withMessage("Wiadomość jest zbyt długa")
-    .escape(),
-];
+  // Middleware do walidacji wiadomości
+  const validateMessage = [
+    body("message")
+      .trim()
+      .notEmpty()
+      .withMessage("Wiadomość nie może być pusta")
+      .isLength({ max: 1000 })
+      .withMessage("Wiadomość jest zbyt długa (max 1000 znaków)"),
+    validateRequest,
+  ];
 
-export function createChatRouter(chatController, moderationController) {
-  // Endpoint do wysyłania wiadomości
-  router.post("/chat", validateChatInput, async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+  // Middleware do walidacji konfiguracji
+  const validateConfig = [
+    body("temperature")
+      .optional()
+      .isFloat({ min: 0, max: 2 })
+      .withMessage("Temperatura musi być wartością między 0 a 2"),
+    body("max_tokens")
+      .optional()
+      .isInt({ min: 100, max: 4000 })
+      .withMessage("max_tokens musi być wartością między 100 a 4000"),
+    validateRequest,
+  ];
 
-    try {
-      const { message } = req.body;
+  // Middleware do walidacji parametrów FAQ
+  const validateFAQParams = [
+    query("limit")
+      .optional()
+      .isInt({ min: 1, max: 50 })
+      .withMessage("Limit musi być wartością między 1 a 50"),
+    validateRequest,
+  ];
 
-      if (!(await moderationController.isContentAppropriate(message))) {
-        return res.status(400).json({
-          error:
-            "Przepraszam, ale twoje pytanie zawiera niedozwolone słowa. Proszę o kulturalną komunikację.",
-        });
-      }
+  // Middleware do walidacji parametrów statystyk
+  const validateStatsParams = [
+    query("question")
+      .trim()
+      .notEmpty()
+      .withMessage("Parametr 'question' jest wymagany"),
+    validateRequest,
+  ];
 
-      const cachedResponse = await chatController.checkCache(message);
-      if (cachedResponse) {
-        console.log("\n[Cache]: === ODPOWIEDŹ Z CACHE ===");
-        return res.json({ reply: cachedResponse });
-      }
-
-      const finalResponse = await chatController.processMessage(message);
-      res.json({ reply: finalResponse });
-    } catch (error) {
-      console.log("\n[Error]: === BŁĄD PRZETWARZANIA ===");
-      console.error(`[Error]: ${error}`);
-      console.log("[Error]: ========================\n");
-      res.status(500).json({
-        error: "Wystąpił błąd podczas przetwarzania wiadomości",
-        details: error.message,
-      });
-    }
-  });
-
-  // Endpoint do pobierania konfiguracji
-  router.get("/config", (req, res) => {
-    res.json(chatController.getConfig());
-  });
-
-  // Endpoint do aktualizacji konfiguracji
+  // Endpointy chatu
   router.post(
-    "/update-config",
-    configLimiter,
-    [
-      body("temperature")
-        .isFloat({ min: 0, max: 1 })
-        .withMessage("Temperatura musi być wartością między 0 a 1"),
-    ],
-    async (req, res) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      try {
-        const { temperature } = req.body;
-        if (
-          typeof temperature !== "number" ||
-          temperature < 0 ||
-          temperature > 1
-        ) {
-          return res.status(400).json({
-            error:
-              "Nieprawidłowa wartość temperatury. Wartość musi być między 0 a 1.",
-          });
-        }
-
-        chatController.updateConfig({ temperature });
-
-        res.json({
-          message: "Zaktualizowano konfigurację",
-          newConfig: chatController.getConfig(),
-        });
-      } catch (error) {
-        console.error(
-          "[ChatBot]: Błąd podczas aktualizacji konfiguracji:",
-          error
-        );
-        res.status(500).json({
-          error: "Wystąpił błąd podczas aktualizacji konfiguracji",
-          details: error.message,
-        });
-      }
-    }
+    "/api/chat",
+    validateMessage,
+    moderationController.moderateMessage.bind(moderationController),
+    chatController.processMessage.bind(chatController)
   );
 
-  // Endpoint do pobierania FAQ
-  router.get("/faq", async (req, res) => {
-    try {
-      const faq = await chatController.getFAQ();
-      res.json(faq);
-    } catch (error) {
-      res.status(500).json({
-        error: "Błąd podczas pobierania FAQ",
-        details: error.message,
-      });
-    }
-  });
+  // Endpointy FAQ i statystyk
+  router.get(
+    "/api/chat/faq",
+    validateFAQParams,
+    chatController.getFAQ.bind(chatController)
+  );
+  router.get(
+    "/api/chat/stats",
+    validateStatsParams,
+    chatController.getQuestionStats.bind(chatController)
+  );
+  router.delete(
+    "/api/chat/stats",
+    chatController.clearStats.bind(chatController)
+  );
+
+  // Endpointy konfiguracji
+  router.get("/api/chat/config", chatController.getConfig.bind(chatController));
+  router.put(
+    "/api/chat/config",
+    validateConfig,
+    chatController.updateConfig.bind(chatController)
+  );
 
   return router;
-}
+};

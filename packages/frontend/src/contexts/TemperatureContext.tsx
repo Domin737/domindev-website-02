@@ -1,8 +1,12 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useRef, ReactNode } from "react";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
 interface TemperatureContextType {
   temperature: number;
   setTemperature: (temp: number) => void;
+  updateTemperature: (temp: number) => Promise<void>;
   onTemperatureChange: () => void;
   addTemperatureListener: (listener: () => void) => () => void;
 }
@@ -13,19 +17,37 @@ const TemperatureContext = createContext<TemperatureContextType | undefined>(
 
 export const TemperatureProvider = ({ children }: { children: ReactNode }) => {
   const [temperature, setTemperature] = useState(0.5);
-  const [listeners] = useState<Array<() => void>>([]);
+  const listenersRef = useRef<Array<() => void>>([]);
 
   const handleTemperatureChange = () => {
     // Wywołaj wszystkich słuchaczy
-    listeners.forEach((listener) => listener());
+    listenersRef.current.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("Błąd podczas wywoływania listenera:", error);
+      }
+    });
+  };
+
+  const updateTemperature = async (temp: number) => {
+    try {
+      await axios.put(`${API_URL}/api/chat/config`, { temperature: temp });
+      setTemperature(temp);
+      // Wywołaj handleTemperatureChange po zaktualizowaniu stanu
+      setTimeout(handleTemperatureChange, 0);
+    } catch (error) {
+      console.error("Błąd podczas aktualizacji temperatury:", error);
+      throw error;
+    }
   };
 
   const addTemperatureListener = (listener: () => void) => {
-    listeners.push(listener);
+    listenersRef.current.push(listener);
     return () => {
-      const index = listeners.indexOf(listener);
+      const index = listenersRef.current.indexOf(listener);
       if (index > -1) {
-        listeners.splice(index, 1);
+        listenersRef.current.splice(index, 1);
       }
     };
   };
@@ -35,6 +57,7 @@ export const TemperatureProvider = ({ children }: { children: ReactNode }) => {
       value={{
         temperature,
         setTemperature,
+        updateTemperature,
         onTemperatureChange: handleTemperatureChange,
         addTemperatureListener,
       }}

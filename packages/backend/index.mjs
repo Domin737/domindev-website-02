@@ -13,6 +13,9 @@ import {
 
 import { CacheService } from "./src/services/cacheService.mjs";
 import { ModerationService } from "./src/services/moderationService.mjs";
+import { ChatService } from "./src/services/chatService.mjs";
+import { ChatCacheService } from "./src/services/chatCacheService.mjs";
+import { ChatStatsService } from "./src/services/chatStatsService.mjs";
 
 import {
   createChatRouter,
@@ -69,9 +72,16 @@ await redisClient.connect().catch((err) => {
 // Inicjalizacja serwisów
 const cacheService = new CacheService(redisClient);
 const moderationService = new ModerationService(redisClient);
+const chatService = new ChatService();
+const chatCacheService = new ChatCacheService(redisClient);
+const chatStatsService = new ChatStatsService(redisClient);
 
 // Inicjalizacja kontrolerów
-const chatController = new ChatController(redisClient);
+const chatController = new ChatController(
+  chatService,
+  chatCacheService,
+  chatStatsService
+);
 const moderationController = new ModerationController(moderationService);
 const cacheController = new CacheController(cacheService);
 
@@ -89,6 +99,8 @@ app.listen(PORT, () => {
   console.log("[Redis]: Połączono z Redis");
   console.log(`[Server]: Serwer backend działa na porcie: ${PORT}`);
   console.log(
-    `[ChatBot]: Temperatura modelu chatbota: ${chatController.config.temperature}`
+    `[ChatBot]: Temperatura modelu chatbota: ${
+      chatService.getConfig().temperature
+    }`
   );
 });

@@ -1,41 +1,40 @@
-export const errorHandler = (err, req, res, next) => {
-  console.error("[Error Handler]:", err);
+import { ChatErrorCode } from "@domindev-website-02/shared/dist/types/chat.js";
 
-  // Jeśli błąd ma już ustawiony status, użyj go, w przeciwnym razie ustaw 500
-  const statusCode = err.statusCode || 500;
-
-  // Przygotuj standardową strukturę odpowiedzi błędu
-  const errorResponse = {
-    error: err.message || "Wystąpił nieoczekiwany błąd",
-    status: statusCode,
-    timestamp: new Date().toISOString(),
-  };
-
-  // Dodaj szczegóły błędu w trybie development
-  if (process.env.NODE_ENV === "development") {
-    errorResponse.stack = err.stack;
-    errorResponse.details = err.details || null;
-  }
-
-  res.status(statusCode).json(errorResponse);
-};
-
-// Middleware do obsługi błędów 404 (Not Found)
-export const notFoundHandler = (req, res) => {
-  res.status(404).json({
-    error: "Nie znaleziono zasobu",
-    status: 404,
-    path: req.originalUrl,
-    timestamp: new Date().toISOString(),
-  });
-};
-
-// Klasa do tworzenia błędów aplikacyjnych
 export class AppError extends Error {
-  constructor(message, statusCode = 500, details = null) {
+  constructor(message, statusCode = 500, details = {}) {
     super(message);
     this.statusCode = statusCode;
     this.details = details;
     this.timestamp = new Date().toISOString();
+    Error.captureStackTrace(this, this.constructor);
   }
 }
+
+export const notFoundHandler = (req, res, next) => {
+  const error = new AppError(`Nie znaleziono: ${req.originalUrl}`, 404);
+  next(error);
+};
+
+export const errorHandler = (err, req, res, next) => {
+  const statusCode = err.statusCode || 500;
+  const errorCode = err.details?.code || ChatErrorCode.SERVICE_UNAVAILABLE;
+
+  // Logowanie błędów tylko dla błędów serwera
+  if (statusCode >= 500) {
+    console.error("[Error]:", {
+      message: err.message,
+      stack: err.stack,
+      details: err.details,
+      timestamp: err.timestamp || new Date().toISOString(),
+    });
+  }
+
+  res.status(statusCode).json({
+    error: {
+      code: errorCode,
+      message: err.message,
+      details: err.details,
+      timestamp: err.timestamp || new Date().toISOString(),
+    },
+  });
+};

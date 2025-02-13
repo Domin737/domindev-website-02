@@ -1,3 +1,6 @@
+import { ChatErrorCode } from "@domindev-website-02/shared/dist/types/chat.js";
+import { AppError } from "../middleware/errorHandler.mjs";
+
 export class ModerationController {
   constructor(moderationService) {
     this.moderationService = moderationService;
@@ -39,6 +42,35 @@ export class ModerationController {
       res.json(result);
     } catch (error) {
       next(error);
+    }
+  }
+
+  // Middleware do moderacji wiadomości
+  async moderateMessage(req, res, next) {
+    try {
+      const { message } = req.body;
+      const isAppropriate = await this.moderationService.isContentAppropriate(
+        message
+      );
+
+      if (!isAppropriate) {
+        throw new AppError("Wiadomość zawiera niedozwolone treści", 400, {
+          code: ChatErrorCode.MODERATION_FAILED,
+        });
+      }
+
+      next();
+    } catch (error) {
+      if (error instanceof AppError) {
+        next(error);
+      } else {
+        next(
+          new AppError("Błąd podczas moderacji wiadomości", 500, {
+            code: ChatErrorCode.MODERATION_FAILED,
+            details: error.message,
+          })
+        );
+      }
     }
   }
 

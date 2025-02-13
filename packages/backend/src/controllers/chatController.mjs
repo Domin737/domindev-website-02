@@ -1,269 +1,187 @@
-import { ChatOpenAI } from "@langchain/openai";
-import { RunnableSequence } from "@langchain/core/runnables";
-import {
-  ChatPromptTemplate,
-  SystemMessagePromptTemplate,
-  HumanMessagePromptTemplate,
-} from "@langchain/core/prompts";
-import {
-  normalizeQuestion,
-  estimateTokenCount,
-} from "@domindev-website-02/shared/dist/index.js";
+import { ChatErrorCode } from "@domindev-website-02/shared/dist/types/chat.js";
+import { AppError } from "../middleware/errorHandler.mjs";
 
 export class ChatController {
-  constructor(redisClient) {
-    this.redisClient = redisClient;
-    this.QUESTION_KEY_PREFIX = "q:";
-    this.STATS_KEY_PREFIX = "stats:";
-    this.STATS_SORTED_SET = "question_stats";
-    this.MAX_CACHED_RESPONSES = 4;
-
-    this.config = {
-      temperature: 0.5,
-      max_tokens: 800,
-    };
-
-    this.stats = {
-      messageCount: 0,
-    };
-
-    this.initializeModel();
-    this.initializePrompt();
+  constructor(chatService, chatCacheService, chatStatsService) {
+    this.chatService = chatService;
+    this.chatCacheService = chatCacheService;
+    this.chatStatsService = chatStatsService;
   }
 
-  initializeModel() {
-    this.model = new ChatOpenAI({
-      openAIApiKey: process.env.OPENAI_API_KEY,
-      temperature: this.config.temperature,
-      maxTokens: this.config.max_tokens,
-      modelName: "gpt-4-turbo-preview",
-      streaming: false,
-    });
+  async validateMessage(message) {
+    if (!message || message.trim().length === 0) {
+      throw new AppError("Wiadomość nie może być pusta", 400, {
+        code: ChatErrorCode.EMPTY_MESSAGE,
+      });
+    }
+
+    if (message.length > 1000) {
+      throw new AppError("Wiadomość jest zbyt długa (max 1000 znaków)", 400, {
+        code: ChatErrorCode.MESSAGE_TOO_LONG,
+        details: { length: message.length, maxLength: 1000 },
+      });
+    }
   }
 
-  initializePrompt() {
-    const chatPrompt = ChatPromptTemplate.fromPromptMessages([
-      SystemMessagePromptTemplate.fromTemplate(
-        `Asystent DominDev - WordPress, WooCommerce, SEO, marketing online.
-
-        Zakres: WordPress, custom kod, WooCommerce, SEO, CRM/ERP, UX/UI, hosting, AI, technologie webowe.
-
-        Formatowanie odpowiedzi:
-        1. Używaj **pogrubienia** dla kluczowych terminów i ważnych pojęć
-        2. Używaj _kursywy_ dla podkreślenia ważnych informacji
-        3. Używaj \`kod\` dla fragmentów kodu, nazw funkcji, komend
-        4. Używaj ### dla nagłówków sekcji
-        5. Używaj list numerowanych (1. 2. 3.) lub punktowanych (- dla każdego punktu)
-
-        Zasady odpowiedzi:
-        - Zawsze używaj formatowania dla lepszej czytelności
-        - Maksymalnie 5 punktów w odpowiedzi
-        - Każdy punkt 3-4 zdania
-        - Zawsze wyróżniaj **kluczowe terminy**
-        - Zawsze używaj _kursywy_ dla ważnych informacji
-        - Przy ogólnych pytaniach sugeruj uszczegółowienie
-        - Poza zakresem: "Przepraszam, nie mogę pomóc. Zapytaj o coś innego ;)"
-        - Temp > 0.5: dozwolone żarty tech`
-      ),
-      HumanMessagePromptTemplate.fromTemplate("{input}"),
-    ]);
-
-    this.chain = RunnableSequence.from([chatPrompt, this.model]);
-  }
-
-  async checkCache(question) {
-    const normalizedQuestion = normalizeQuestion(question);
-    const cacheKey = `${this.QUESTION_KEY_PREFIX}${normalizedQuestion}_temp_${this.config.temperature}`;
-
+  async processMessage(req, res, next) {
     try {
-      const cacheType = await this.redisClient.type(cacheKey);
-      if (cacheType !== "list") {
-        await this.redisClient.del(cacheKey);
-        return null;
-      }
+      const { message } = req.body;
+      await this.validateMessage(message);
 
-      const responses = await this.redisClient.lRange(cacheKey, 0, -1);
+      const temperature = this.chatService.getConfig().temperature;
 
-      if (!responses || responses.length < this.MAX_CACHED_RESPONSES) {
-        console.log("\n[Cache]: === GENEROWANIE NOWEJ ODPOWIEDZI ===");
-        console.log(
-          `[Cache]: Aktualnie w cache: ${responses ? responses.length : 0}/${
-            this.MAX_CACHED_RESPONSES
-          }`
-        );
-        return null;
-      }
-
-      const response = responses[0];
-      await this.redisClient.lPop(cacheKey);
-      await this.redisClient.rPush(cacheKey, response);
-
+      // Sprawdź cache
       try {
-        const type = await this.redisClient.type(this.STATS_SORTED_SET);
-        if (type !== "zset") {
-          await this.redisClient.del(this.STATS_SORTED_SET);
-        }
-        await this.redisClient.zIncrBy(
-          this.STATS_SORTED_SET,
-          1,
-          normalizedQuestion
+        const cachedResponse = await this.chatCacheService.checkCache(
+          message,
+          temperature
         );
-      } catch (err) {
-        console.error("[Redis]: Błąd aktualizacji statystyk:", err);
+        if (cachedResponse) {
+          await this.chatStatsService.updateQuestionStats(message, temperature);
+          return res.json({ reply: cachedResponse.content });
+        }
+      } catch (error) {
+        console.error("[Cache]: Błąd podczas sprawdzania cache:", error);
+        // Kontynuuj bez cache w przypadku błędu
       }
 
-      console.log("\n[Cache]: === ODPOWIEDŹ Z CACHE (ROTACYJNEGO) ===");
-      console.log(
-        `[Cache]: Rotacja odpowiedzi ${responses.length}/${this.MAX_CACHED_RESPONSES}`
-      );
+      // Generuj nową odpowiedź
+      const response = await this.chatService.processMessage(message);
 
-      return JSON.parse(response);
+      // Zapisz do cache i aktualizuj statystyki równolegle
+      try {
+        await Promise.allSettled([
+          this.chatCacheService.saveToCache(
+            message,
+            response.content,
+            temperature
+          ),
+          this.chatStatsService.updateQuestionStats(message, temperature),
+        ]);
+      } catch (error) {
+        console.error("[Cache/Stats]: Błąd podczas zapisywania:", error);
+        // Kontynuuj mimo błędu cache/statystyk
+      }
+
+      res.json({ reply: response.content });
     } catch (error) {
-      console.error("[Redis]: Błąd podczas sprawdzania cache:", error);
-      return null;
-    }
-  }
-
-  async saveToCache(question, answer) {
-    const normalizedQuestion = normalizeQuestion(question);
-    const cacheKey = `${this.QUESTION_KEY_PREFIX}${normalizedQuestion}_temp_${this.config.temperature}`;
-
-    try {
-      const cacheType = await this.redisClient.type(cacheKey);
-      if (cacheType !== "list") {
-        await this.redisClient.del(cacheKey);
-      }
-
-      const currentResponses = await this.redisClient.lLen(cacheKey);
-
-      if (!currentResponses || currentResponses < this.MAX_CACHED_RESPONSES) {
-        const existingResponses = await this.redisClient.lRange(
-          cacheKey,
-          0,
-          -1
-        );
-        const isDuplicate = existingResponses.some(
-          (resp) => JSON.parse(resp) === answer
-        );
-
-        if (!isDuplicate) {
-          await this.redisClient.rPush(cacheKey, JSON.stringify(answer));
-          await this.redisClient.expire(cacheKey, 30 * 24 * 60 * 60);
-
-          console.log("\n[Cache]: === ZAPISANO NOWĄ ODPOWIEDŹ ===");
-          console.log(
-            `[Cache]: Aktualna liczba odpowiedzi: ${
-              (currentResponses || 0) + 1
-            }/${this.MAX_CACHED_RESPONSES}`
-          );
-        } else {
-          console.log("\n[Cache]: === POMINIĘTO DUPLIKAT ODPOWIEDZI ===");
-        }
+      if (error instanceof AppError) {
+        next(error);
       } else {
-        console.log("\n[Cache]: === CACHE PEŁNY ===");
-        console.log(
-          `[Cache]: Osiągnięto limit ${this.MAX_CACHED_RESPONSES} odpowiedzi`
+        next(
+          new AppError("Błąd przetwarzania wiadomości", 500, {
+            code: ChatErrorCode.SERVICE_UNAVAILABLE,
+            details: error.message,
+          })
         );
       }
-
-      const type = await this.redisClient.type(this.STATS_SORTED_SET);
-      if (type !== "zset") {
-        await this.redisClient.del(this.STATS_SORTED_SET);
-      }
-
-      await this.redisClient.zIncrBy(
-        this.STATS_SORTED_SET,
-        1,
-        normalizedQuestion
-      );
-    } catch (error) {
-      console.error("[Redis]: Błąd podczas zapisywania do cache:", error);
     }
   }
 
-  async processMessage(message) {
-    this.stats.messageCount++;
-
-    console.log("\n[ChatBot]: === NOWE ZAPYTANIE ===");
-    console.log(`[ChatBot]: Zapytanie #${this.stats.messageCount}`);
-    console.log(`[ChatBot]: Treść: ${message}`);
-    console.log(`[ChatBot]: Długość zapytania: ${message.length} znaków`);
-    console.log(
-      `[ChatBot]: Szacowana liczba tokenów: ~${estimateTokenCount(message)}`
-    );
-    console.log("[ChatBot]: ====================\n");
-
-    const startTime = Date.now();
-    const response = await this.chain.invoke({
-      input: message,
-    });
-    const finalResponse = response.content;
-
-    const endTime = Date.now();
-    const responseTime = endTime - startTime;
-    const finalResponseLength = finalResponse.length;
-    const finalTokenCount = estimateTokenCount(finalResponse);
-
-    console.log("\n[ChatBot]: === STATYSTYKI ODPOWIEDZI ===");
-    console.log(`[ChatBot]: Czas odpowiedzi: ${responseTime}ms`);
-    console.log(`[ChatBot]: Długość tekstu: ${finalResponseLength} znaków`);
-    console.log(`[ChatBot]: Szacowana liczba tokenów: ~${finalTokenCount}`);
-    console.log("[ChatBot]: ===========================\n");
-
-    await this.saveToCache(message, finalResponse);
-    return finalResponse;
-  }
-
-  async getFAQ() {
+  async getFAQ(req, res, next) {
     try {
-      const questions = await this.redisClient.zRangeWithScores(
-        this.STATS_SORTED_SET,
-        0,
-        9,
-        {
-          REV: true,
-        }
-      );
-
-      const appropriateQuestions = [];
-      for (const { score, value } of questions) {
-        const cacheKey = `${this.QUESTION_KEY_PREFIX}${value}_temp_${this.config.temperature}`;
-        const cacheType = await this.redisClient.type(cacheKey);
-
-        if (cacheType === "list") {
-          const answers = await this.redisClient.lRange(cacheKey, 0, -1);
-          if (answers && answers.length > 0) {
-            appropriateQuestions.push({
-              question: value,
-              answers: answers.map((answer) => JSON.parse(answer)),
-              useCount: score,
-            });
-          }
-        }
-      }
-
-      return appropriateQuestions;
+      const limit = Math.min(Math.max(Number(req.query.limit) || 10, 1), 50);
+      const faq = await this.chatStatsService.getFAQ(limit);
+      res.json(faq);
     } catch (error) {
-      console.error("[Redis]: Błąd podczas pobierania FAQ:", error);
-      throw error;
+      next(
+        new AppError("Błąd pobierania FAQ", 500, {
+          code: ChatErrorCode.STATS_ERROR,
+          details: error.message,
+        })
+      );
     }
   }
 
-  updateConfig(newConfig) {
-    const oldTemp = this.config.temperature;
-    this.config = { ...this.config, ...newConfig };
+  async getQuestionStats(req, res, next) {
+    try {
+      const { question } = req.query;
+      if (!question) {
+        throw new AppError("Nie podano pytania", 400, {
+          code: ChatErrorCode.EMPTY_MESSAGE,
+        });
+      }
 
-    console.log("\n[ChatBot]: === ZMIANA TEMPERATURY ===");
-    console.log(`[ChatBot]: Poprzednia temperatura: ${oldTemp}`);
-    console.log(`[ChatBot]: Nowa temperatura: ${this.config.temperature}`);
-    console.log("[ChatBot]: ========================\n");
-
-    this.initializeModel();
+      const stats = await this.chatStatsService.getQuestionStats(question);
+      res.json(stats);
+    } catch (error) {
+      if (error instanceof AppError) {
+        next(error);
+      } else {
+        next(
+          new AppError("Błąd pobierania statystyk", 500, {
+            code: ChatErrorCode.STATS_ERROR,
+            details: error.message,
+          })
+        );
+      }
+    }
   }
 
-  getConfig() {
-    return {
-      temperature: this.config.temperature,
-    };
+  async clearStats(req, res, next) {
+    try {
+      const result = await this.chatStatsService.clearStats();
+      res.json(result);
+    } catch (error) {
+      next(
+        new AppError("Błąd czyszczenia statystyk", 500, {
+          code: ChatErrorCode.STATS_ERROR,
+          details: error.message,
+        })
+      );
+    }
+  }
+
+  async updateConfig(req, res, next) {
+    try {
+      const { temperature, max_tokens } = req.body;
+
+      if (temperature !== undefined) {
+        if (temperature < 0 || temperature > 2) {
+          throw new AppError(
+            "Temperatura musi być wartością między 0 a 2",
+            400,
+            {
+              code: ChatErrorCode.INVALID_TEMPERATURE,
+              details: { temperature, min: 0, max: 2 },
+            }
+          );
+        }
+      }
+
+      const result = await this.chatService.updateConfig({
+        temperature,
+        max_tokens,
+      });
+      res.json({
+        message: "Zaktualizowano konfigurację",
+        config: result,
+      });
+    } catch (error) {
+      if (error instanceof AppError) {
+        next(error);
+      } else {
+        next(
+          new AppError("Błąd aktualizacji konfiguracji", 500, {
+            code: ChatErrorCode.SERVICE_UNAVAILABLE,
+            details: error.message,
+          })
+        );
+      }
+    }
+  }
+
+  async getConfig(req, res, next) {
+    try {
+      const config = this.chatService.getConfig();
+      res.json(config);
+    } catch (error) {
+      next(
+        new AppError("Błąd pobierania konfiguracji", 500, {
+          code: ChatErrorCode.SERVICE_UNAVAILABLE,
+          details: error.message,
+        })
+      );
+    }
   }
 }

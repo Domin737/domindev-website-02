@@ -7,11 +7,11 @@
   "scripts": {
     "start": "node index.mjs",
     "dev": "nodemon index.mjs",
-    "redisCacheClear": "node scripts/redis/manage-cache.mjs clear",
-    "redisCacheClearAll": "node scripts/redis/manage-cache.mjs clear all",
-    "redisCacheClearExpired": "node scripts/redis/manage-cache.mjs clear expired",
-    "redisCacheClearTemp": "node scripts/redis/manage-cache.mjs clear temperature",
-    "redisCacheStats": "node scripts/redis/manage-cache.mjs stats"
+    "cache:clear": "node scripts/redis/manage-cache.mjs clear expired",
+    "cache:clear:all": "node scripts/redis/manage-cache.mjs clear all",
+    "cache:clear:stats": "node scripts/redis/manage-cache.mjs clear stats",
+    "cache:clear:temp": "node scripts/redis/manage-cache.mjs clear temperature",
+    "cache:stats": "node scripts/redis/manage-cache.mjs stats"
   },
   "dependencies": {
     "@domindev-website-02/shared": "^1.0.0",

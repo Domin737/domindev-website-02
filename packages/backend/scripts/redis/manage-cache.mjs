@@ -7,11 +7,6 @@ const BANNED_WORDS_KEY = "banned_words"; // dla zabronionych słów
 const STATS_KEY_PREFIX = "stats:"; // dla statystyk
 const STATS_SORTED_SET = "question_stats"; // dla rankingu pytań
 
-// Funkcja sprawdzająca czy klucz jest związany z cache chatbota
-const isChatbotCacheKey = (key) => {
-  return key.startsWith(QUESTION_KEY_PREFIX) && key.includes("_temp_");
-};
-
 // Inicjalizacja Redis
 const redisClient = createClient({
   username: process.env.REDIS_USERNAME,
@@ -34,17 +29,25 @@ const clearCache = async (strategy, temperature) => {
 
     switch (strategy) {
       case "all":
-        // Pobierz tylko klucze związane z cache chatbota
+        // Wyczyść wszystkie klucze związane z chatem
         const allKeys = await redisClient.keys(`${QUESTION_KEY_PREFIX}*`);
-        const chatbotKeys = allKeys.filter(isChatbotCacheKey);
-        if (chatbotKeys.length > 0) {
-          await redisClient.del(...chatbotKeys);
-          clearedKeys = chatbotKeys.length;
+        if (allKeys.length > 0) {
+          await redisClient.del(allKeys);
+          clearedKeys = allKeys.length;
           console.log(
-            `[Cache]: Wyczyszczono wszystkie klucze (${clearedKeys})`
+            `[Cache]: Wyczyszczono wszystkie klucze cache (${clearedKeys})`
           );
         } else {
-          console.log("[Cache]: Brak kluczy do wyczyszczenia");
+          console.log("[Cache]: Brak kluczy cache do wyczyszczenia");
+        }
+
+        // Wyczyść statystyki
+        const statsExists = await redisClient.exists(STATS_SORTED_SET);
+        if (statsExists) {
+          await redisClient.del(STATS_SORTED_SET);
+          console.log("[Cache]: Wyczyszczono statystyki pytań");
+        } else {
+          console.log("[Cache]: Brak statystyk do wyczyszczenia");
         }
         break;
 
@@ -58,7 +61,7 @@ const clearCache = async (strategy, temperature) => {
           `${QUESTION_KEY_PREFIX}*_temp_${temperature}`
         );
         if (tempKeys.length > 0) {
-          await redisClient.del(...tempKeys);
+          await redisClient.del(tempKeys);
           clearedKeys = tempKeys.length;
           console.log(
             `[Cache]: Wyczyszczono ${clearedKeys} kluczy dla temperatury ${temperature}`
@@ -72,8 +75,7 @@ const clearCache = async (strategy, temperature) => {
 
       case "expired":
         const allCacheKeys = await redisClient.keys(`${QUESTION_KEY_PREFIX}*`);
-        const chatbotCacheKeys = allCacheKeys.filter(isChatbotCacheKey);
-        for (const key of chatbotCacheKeys) {
+        for (const key of allCacheKeys) {
           const ttl = await redisClient.ttl(key);
           if (ttl <= 0) {
             await redisClient.del(key);
@@ -85,6 +87,16 @@ const clearCache = async (strategy, temperature) => {
             ? `[Cache]: Wyczyszczono ${clearedKeys} wygasłych kluczy`
             : "[Cache]: Brak wygasłych kluczy do wyczyszczenia"
         );
+        break;
+
+      case "stats":
+        const statsExist = await redisClient.exists(STATS_SORTED_SET);
+        if (statsExist) {
+          await redisClient.del(STATS_SORTED_SET);
+          console.log("[Cache]: Wyczyszczono statystyki pytań");
+        } else {
+          console.log("[Cache]: Brak statystyk do wyczyszczenia");
+        }
         break;
 
       default:
@@ -103,9 +115,8 @@ const showStats = async () => {
   try {
     await redisClient.connect();
 
-    // Pobierz tylko klucze związane z cache chatbota
+    // Pobierz wszystkie klucze związane z chatem
     const allKeys = await redisClient.keys(`${QUESTION_KEY_PREFIX}*`);
-    const chatbotKeys = allKeys.filter(isChatbotCacheKey);
 
     // Statystyki według temperatury
     const tempStats = new Map();
@@ -117,11 +128,9 @@ const showStats = async () => {
       }
     }
 
-    // Wyświetl statystyki
+    // Wyświetl statystyki cache
     console.log("\n=== STATYSTYKI CACHE ===");
-    console.log(
-      `Całkowita liczba wpisów w cache chatbota: ${chatbotKeys.length}`
-    );
+    console.log(`Całkowita liczba wpisów w cache chatbota: ${allKeys.length}`);
 
     if (tempStats.size > 0) {
       console.log("\nPodział według temperatury:");
@@ -132,11 +141,34 @@ const showStats = async () => {
 
     // Sprawdź wygasłe klucze
     let expiredCount = 0;
-    for (const key of chatbotKeys) {
+    for (const key of allKeys) {
       const ttl = await redisClient.ttl(key);
       if (ttl <= 0) expiredCount++;
     }
     console.log(`\nLiczba wygasłych kluczy: ${expiredCount}`);
+
+    // Wyświetl statystyki pytań
+    const statsExists = await redisClient.exists(STATS_SORTED_SET);
+    if (statsExists) {
+      const questions = await redisClient.zRangeWithScores(
+        STATS_SORTED_SET,
+        0,
+        -1,
+        {
+          REV: true,
+        }
+      );
+      console.log("\n=== STATYSTYKI PYTAŃ ===");
+      console.log(`Liczba unikalnych pytań: ${questions.length}`);
+      if (questions.length > 0) {
+        console.log("\nTop 5 najczęstszych pytań:");
+        questions.slice(0, 5).forEach(({ value, score }) => {
+          console.log(`- "${value}": ${score} razy`);
+        });
+      }
+    } else {
+      console.log("\nBrak statystyk pytań");
+    }
   } catch (error) {
     console.error("[Cache]: Błąd podczas pobierania statystyk:", error);
     process.exit(1);
@@ -163,21 +195,21 @@ switch (command) {
   default:
     console.log(`
 Użycie:
-  npm run redisCacheClear [strategia] [temperatura]
-  npm run redisCacheStats
+  npm run cache:clear [strategia] [temperatura]
+  npm run cache:stats
 
 Strategie czyszczenia:
   - expired (domyślna) - usuwa tylko wygasłe wpisy z cache chatbota
-  - all               - usuwa wszystkie wpisy z cache chatbota
+  - all               - usuwa wszystkie wpisy z cache chatbota i statystyki
+  - stats            - usuwa tylko statystyki pytań
   - temperature      - usuwa wpisy z cache chatbota dla podanej temperatury (wymagany parametr temperatury)
 
 Przykłady:
-  npm run redisCacheClear                    # usuwa wygasłe wpisy z cache chatbota
-  npm run redisCacheClearAll                 # usuwa wszystkie wpisy z cache chatbota
-  npm run redisCacheClearTemp 0.7            # usuwa wpisy z cache chatbota dla temperatury 0.7
-  npm run redisCacheStats                    # pokazuje statystyki cache chatbota
-
-UWAGA: Te operacje nie wpływają na inne dane w Redis (zabronione słowa, statystyki, itp.)
+  npm run cache:clear                    # usuwa wygasłe wpisy z cache chatbota
+  npm run cache:clear:all                # usuwa wszystkie wpisy z cache chatbota i statystyki
+  npm run cache:clear:stats              # usuwa tylko statystyki pytań
+  npm run cache:clear:temp 0.7           # usuwa wpisy z cache chatbota dla temperatury 0.7
+  npm run cache:stats                    # pokazuje statystyki cache chatbota i pytań
     `);
     process.exit(1);
 }

@@ -9,10 +9,14 @@ export const validateMessageLength = (
 };
 
 /**
- * Normalizuje tekst pytania (usuwa nadmiarowe spacje, zamienia na małe litery)
+ * Normalizuje tekst pytania (usuwa nadmiarowe spacje, zamienia na małe litery, normalizuje znaki)
  */
 export const normalizeQuestion = (question: string): string => {
-  return question.toLowerCase().trim().replace(/\s+/g, " ");
+  return question
+    .normalize("NFC") // Normalizuje znaki diakrytyczne
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ");
 };
 
 /**

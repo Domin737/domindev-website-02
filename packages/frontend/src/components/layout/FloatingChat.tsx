@@ -17,9 +17,20 @@ interface ChatMessage {
   isError?: boolean;
 }
 
-interface FrequentQuestion {
+interface FAQAnswer {
+  reply: string;
+}
+
+interface FAQItem {
   question: string;
+  answers: FAQAnswer[];
   useCount: number;
+}
+
+interface FAQResponse {
+  questions: FAQItem[];
+  total: number;
+  limit: number;
 }
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
@@ -39,12 +50,11 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showLongLoadingMessage, setShowLongLoadingMessage] = useState(false);
-  const [frequentQuestions, setFrequentQuestions] = useState<
-    FrequentQuestion[]
-  >([]);
+  const [frequentQuestions, setFrequentQuestions] = useState<FAQItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
   const loadingTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const inactivityTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const lastTemperatureRef = useRef(temperature);
 
   // Resetuj timer nieaktywności
   const resetInactivityTimer = () => {
@@ -81,8 +91,8 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
 
   const fetchFrequentQuestions = async () => {
     try {
-      const response = await axios.get<FrequentQuestion[]>(`${API_URL}/faq`);
-      setFrequentQuestions(response.data);
+      const response = await axios.get<FAQResponse>(`${API_URL}/api/chat/faq`);
+      setFrequentQuestions(response.data.questions);
     } catch (error) {
       console.error("Błąd podczas pobierania FAQ:", error);
     }
@@ -90,7 +100,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
 
   // Nasłuchuj na zmiany temperatury
   useEffect(() => {
-    const handleTemperatureChange = () => {
+    if (lastTemperatureRef.current !== temperature) {
       let icon = "📝";
       let description = "Odpowiedzi będą teraz bardziej spójne i konkretne.";
 
@@ -121,10 +131,10 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
           isTemperatureChange: true,
         },
       ]);
-    };
 
-    return addTemperatureListener(handleTemperatureChange);
-  }, [addTemperatureListener, temperature]);
+      lastTemperatureRef.current = temperature;
+    }
+  }, [temperature]);
 
   // Reset stanu ładowania przy odmontowaniu komponentu
   useEffect(() => {
@@ -158,7 +168,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
     }, 10000);
 
     try {
-      const response = await axios.post<ChatResponse>(`${API_URL}/chat`, {
+      const response = await axios.post<ChatResponse>(`${API_URL}/api/chat`, {
         message: message,
       });
 
@@ -168,7 +178,8 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
       ]);
     } catch (error: any) {
       const errorMessage =
-        error.response?.data?.error || "Błąd serwera. Spróbuj ponownie.";
+        error.response?.data?.error?.message ||
+        "Błąd serwera. Spróbuj ponownie.";
       setMessages((prev) => [
         ...prev,
         {
@@ -381,5 +392,4 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
   );
 };
 
-export type { FloatingChatProps };
 export default FloatingChat;
