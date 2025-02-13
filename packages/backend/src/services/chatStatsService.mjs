@@ -6,6 +6,7 @@ export class ChatStatsService {
     this.redisClient = redisClient;
     this.QUESTION_KEY_PREFIX = "q:";
     this.STATS_SORTED_SET = "question_stats";
+    this.SUPPORTED_TEMPERATURES = [0.3, 0.5, 0.7, 0.9];
   }
 
   async updateQuestionStats(question, temperature) {
@@ -70,35 +71,55 @@ export class ChatStatsService {
     }
 
     try {
-      // Pobierz najczęściej zadawane pytania
-      const questions = await this.redisClient.zRangeWithScores(
+      // Pobierz wszystkie pytania i posortuj je malejąco po score
+      const allQuestions = await this.redisClient.zRange(
         this.STATS_SORTED_SET,
         0,
-        limit - 1,
-        {
-          REV: true,
-        }
+        -1
       );
 
-      const appropriateQuestions = [];
-      for (const { score, value } of questions) {
-        const cacheKey = `${this.QUESTION_KEY_PREFIX}${value}_temp_${0.5}`; // Domyślna temperatura
-        const cacheType = await this.redisClient.type(cacheKey);
+      const questionsWithScores = await Promise.all(
+        allQuestions.map(async (question) => {
+          const score = await this.redisClient.zScore(
+            this.STATS_SORTED_SET,
+            question
+          );
+          return { question, score: parseFloat(score) };
+        })
+      );
 
-        if (cacheType === "list") {
-          const answers = await this.redisClient.lRange(cacheKey, 0, -1);
-          if (answers && answers.length > 0) {
-            appropriateQuestions.push({
-              question: value,
-              answers: answers.map((answer) => JSON.parse(answer)),
-              useCount: score,
-            });
+      // Sortuj malejąco po score
+      questionsWithScores.sort((a, b) => b.score - a.score);
+
+      const appropriateQuestions = [];
+      for (const { question, score } of questionsWithScores) {
+        // Sprawdź cache dla wszystkich obsługiwanych temperatur
+        for (const temp of this.SUPPORTED_TEMPERATURES) {
+          const cacheKey = `${this.QUESTION_KEY_PREFIX}${question}_temp_${temp}`;
+          const cacheType = await this.redisClient.type(cacheKey);
+
+          if (cacheType === "list") {
+            const answers = await this.redisClient.lRange(cacheKey, 0, -1);
+            if (answers && answers.length > 0) {
+              appropriateQuestions.push({
+                question,
+                answers: answers.map((answer) => JSON.parse(answer)),
+                useCount: score,
+                temperature: temp,
+              });
+              break; // Znaleziono odpowiedzi dla tej temperatury, przechodzimy do następnego pytania
+            }
           }
+        }
+
+        // Jeśli znaleźliśmy wystarczającą liczbę pytań, przerywamy
+        if (appropriateQuestions.length >= limit) {
+          break;
         }
       }
 
       return {
-        questions: appropriateQuestions,
+        questions: appropriateQuestions.slice(0, limit),
         total: appropriateQuestions.length,
         limit,
       };
@@ -128,10 +149,25 @@ export class ChatStatsService {
         };
       }
 
+      // Pobierz odpowiedzi dla wszystkich temperatur
+      const answers = {};
+      for (const temp of this.SUPPORTED_TEMPERATURES) {
+        const cacheKey = `${this.QUESTION_KEY_PREFIX}${normalizedQuestion}_temp_${temp}`;
+        const cacheType = await this.redisClient.type(cacheKey);
+
+        if (cacheType === "list") {
+          const cachedAnswers = await this.redisClient.lRange(cacheKey, 0, -1);
+          if (cachedAnswers && cachedAnswers.length > 0) {
+            answers[temp] = cachedAnswers.map((answer) => JSON.parse(answer));
+          }
+        }
+      }
+
       return {
         message: "Pobrano statystyki pytania",
         question: normalizedQuestion,
         useCount: score,
+        answers,
       };
     } catch (error) {
       console.error("[Redis]: Błąd podczas pobierania statystyk:", error);
