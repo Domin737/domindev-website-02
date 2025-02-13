@@ -12,6 +12,7 @@ import {
 } from "./src/controllers/index.mjs";
 
 import { CacheService } from "./src/services/cacheService.mjs";
+import { ModerationService } from "./src/services/moderationService.mjs";
 
 import {
   createChatRouter,
@@ -67,10 +68,11 @@ await redisClient.connect().catch((err) => {
 
 // Inicjalizacja serwisów
 const cacheService = new CacheService(redisClient);
+const moderationService = new ModerationService(redisClient);
 
 // Inicjalizacja kontrolerów
 const chatController = new ChatController(redisClient);
-const moderationController = new ModerationController(redisClient);
+const moderationController = new ModerationController(moderationService);
 const cacheController = new CacheController(cacheService);
 
 // Konfiguracja routerów

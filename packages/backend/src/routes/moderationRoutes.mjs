@@ -1,5 +1,5 @@
 import express from "express";
-import { body, validationResult } from "express-validator";
+import { body, param, validationResult } from "express-validator";
 import rateLimit from "express-rate-limit";
 
 const router = express.Router();
@@ -18,57 +18,70 @@ const bannedWordsGetLimiter = rateLimit({
   message: "Przekroczono limit odczytów listy zabronionych słów.",
 });
 
+// Middleware do walidacji
+const validateRequest = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+  next();
+};
+
 export function createModerationRouter(moderationController) {
   // Endpoint do dodawania zabronionych słów
   router.post(
-    "/banned-words",
+    "/api/banned-words",
     bannedWordsLimiter,
-    [body("word").trim().notEmpty().withMessage("Słowo nie może być puste")],
-    async (req, res) => {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-      }
-
-      try {
-        const { word } = req.body;
-        const result = await moderationController.addBannedWord(word);
-        res.json(result);
-      } catch (error) {
-        res.status(500).json({
-          error: "Błąd podczas dodawania słowa",
-          details: error.message,
-        });
-      }
-    }
+    [
+      body("word")
+        .trim()
+        .notEmpty()
+        .withMessage("Słowo nie może być puste")
+        .isLength({ max: 50 })
+        .withMessage("Słowo nie może być dłuższe niż 50 znaków"),
+    ],
+    validateRequest,
+    moderationController.addBannedWord.bind(moderationController)
   );
 
   // Endpoint do usuwania zabronionych słów
-  router.delete("/banned-words/:word", bannedWordsLimiter, async (req, res) => {
-    try {
-      const { word } = req.params;
-      const result = await moderationController.removeBannedWord(word);
-      res.json(result);
-    } catch (error) {
-      res.status(500).json({
-        error: "Błąd podczas usuwania słowa",
-        details: error.message,
-      });
-    }
-  });
+  router.delete(
+    "/api/banned-words/:word",
+    bannedWordsLimiter,
+    [
+      param("word")
+        .trim()
+        .notEmpty()
+        .withMessage("Słowo nie może być puste")
+        .isLength({ max: 50 })
+        .withMessage("Słowo nie może być dłuższe niż 50 znaków"),
+    ],
+    validateRequest,
+    moderationController.removeBannedWord.bind(moderationController)
+  );
 
   // Endpoint do pobierania listy zabronionych słów
-  router.get("/banned-words", bannedWordsGetLimiter, async (req, res) => {
-    try {
-      const words = await moderationController.getBannedWords();
-      res.json(words.map((word) => ({ word })));
-    } catch (error) {
-      res.status(500).json({
-        error: "Błąd podczas pobierania listy zabronionych słów",
-        details: error.message,
-      });
-    }
-  });
+  router.get(
+    "/api/banned-words",
+    bannedWordsGetLimiter,
+    moderationController.getBannedWords.bind(moderationController)
+  );
+
+  // Nowy endpoint do sprawdzania tekstu
+  router.post(
+    "/api/check-content",
+    bannedWordsLimiter,
+    [
+      body("text")
+        .trim()
+        .notEmpty()
+        .withMessage("Tekst nie może być pusty")
+        .isLength({ max: 1000 })
+        .withMessage("Tekst nie może być dłuższy niż 1000 znaków"),
+    ],
+    validateRequest,
+    moderationController.checkContent.bind(moderationController)
+  );
 
   return router;
 }
