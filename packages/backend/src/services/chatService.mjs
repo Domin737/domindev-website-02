@@ -4,6 +4,7 @@ import {
   ChatPromptTemplate,
   SystemMessagePromptTemplate,
   HumanMessagePromptTemplate,
+  MessagesPlaceholder,
 } from "@langchain/core/prompts";
 import { estimateTokenCount } from "@domindev-website-02/shared/dist/index.js";
 import { AppError } from "../middleware/errorHandler.mjs";
@@ -13,6 +14,7 @@ const RETRY_DELAY = 1000;
 const MAX_TOKENS_PER_REQUEST = 4000;
 const REQUEST_TIMEOUT = 30000;
 const MAX_REQUESTS_PER_MINUTE = 50;
+const MAX_CONTEXT_TOKENS = 2000;
 
 export class ChatService {
   constructor() {
@@ -68,7 +70,13 @@ export class ChatService {
     - Zawsze używaj _kursywy_ dla ważnych informacji
     - Przy ogólnych pytaniach sugeruj uszczegółowienie
     - Poza zakresem: "Przepraszam, nie mogę pomóc. Zapytaj o coś innego ;)"
-    - Temp > 0.5: dozwolone żarty tech`;
+    - Temp > 0.5: dozwolone żarty tech
+    
+    Kontekst rozmowy:
+    - Zachowuj spójność z poprzednimi odpowiedziami
+    - Odwołuj się do wcześniejszych pytań i odpowiedzi
+    - Unikaj powtarzania tych samych informacji
+    - Rozwijaj wątki z poprzednich odpowiedzi`;
 
     // Sprawdź długość promptu systemowego
     const systemTokenCount = estimateTokenCount(systemPrompt);
@@ -78,6 +86,7 @@ export class ChatService {
 
     const chatPrompt = ChatPromptTemplate.fromPromptMessages([
       SystemMessagePromptTemplate.fromTemplate(systemPrompt),
+      new MessagesPlaceholder("chat_history"),
       HumanMessagePromptTemplate.fromTemplate("{input}"),
     ]);
 
@@ -127,7 +136,42 @@ export class ChatService {
     }
   }
 
-  async processMessage(message, abortSignal) {
+  prepareContext(context = []) {
+    // Przekształć kontekst na format LangChain
+    const messages = context.map((msg) => ({
+      type: msg.role === "assistant" ? "ai" : msg.role,
+      content: msg.content,
+    }));
+
+    // Oblicz całkowitą liczbę tokenów w kontekście
+    const contextTokens = messages.reduce(
+      (sum, msg) => sum + estimateTokenCount(msg.content),
+      0
+    );
+
+    // Jeśli kontekst jest za duży, usuń najstarsze wiadomości
+    if (contextTokens > MAX_CONTEXT_TOKENS) {
+      console.log(
+        `[ChatBot]: Kontekst przekracza limit tokenów (${contextTokens}/${MAX_CONTEXT_TOKENS})`
+      );
+      while (
+        messages.length > 0 &&
+        messages.reduce(
+          (sum, msg) => sum + estimateTokenCount(msg.content),
+          0
+        ) > MAX_CONTEXT_TOKENS
+      ) {
+        messages.shift();
+      }
+      console.log(
+        `[ChatBot]: Przycięto kontekst do ${messages.length} wiadomości`
+      );
+    }
+
+    return messages;
+  }
+
+  async processMessage(message, context = [], abortSignal) {
     if (!message?.trim()) {
       throw new AppError("Wiadomość nie może być pusta", 400);
     }
@@ -156,8 +200,11 @@ export class ChatService {
           throw new AppError("Zapytanie zostało przerwane", 408);
         }
 
+        const chatHistory = this.prepareContext(context);
+
         const response = await this.chain.invoke({
           input: message,
+          chat_history: chatHistory,
         });
 
         if (abortSignal?.aborted) {
