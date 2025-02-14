@@ -1,0 +1,148 @@
+├── .env
+├── .gitattributes
+├── .gitignore
+├── package-lock.json
+├── package.json
+├── packages
+│   ├── backend
+│   │   ├── .env
+│   │   ├── index.mjs
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── scripts
+│   │   │   ├── banned-words
+│   │   │   │   ├── add-banned-words.mjs
+│   │   │   │   ├── data
+│   │   │   │   │   ├── banned-words-allAdded.txt
+│   │   │   │   │   └── banned-words.txt
+│   │   │   │   ├── manage-banned-words.mjs
+│   │   │   │   └── remove-duplicates.mjs
+│   │   │   ├── redis
+│   │   │   │   ├── clear-cache.mjs
+│   │   │   │   └── manage-cache.mjs
+│   │   │   ├── security
+│   │   │   │   └── test-security.sh
+│   │   │   └── test-chat.mjs
+│   │   └── src
+│   │       ├── config
+│   │       │   └── constants.mjs
+│   │       ├── controllers
+│   │       │   ├── cacheController.mjs
+│   │       │   ├── chatController.mjs
+│   │       │   ├── index.mjs
+│   │       │   └── moderationController.mjs
+│   │       ├── middleware
+│   │       │   └── errorHandler.mjs
+│   │       ├── routes
+│   │       │   ├── cacheRoutes.mjs
+│   │       │   ├── chatRoutes.mjs
+│   │       │   ├── index.mjs
+│   │       │   └── moderationRoutes.mjs
+│   │       └── services
+│   │           ├── cacheService.mjs
+│   │           ├── chatCacheService.mjs
+│   │           ├── chatContextService.mjs
+│   │           ├── chatService.mjs
+│   │           ├── chatStatsService.mjs
+│   │           └── moderationService.mjs
+│   ├── frontend
+│   │   ├── eslint.config.js
+│   │   ├── index.html
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── public
+│   │   │   └── images
+│   │   │       ├── favicon.svg
+│   │   │       ├── logos
+│   │   │       │   ├── logo-domindev-black-transparentbg-1448x1448.svg
+│   │   │       │   ├── logo-domindev-black-transparentbg-362x362.svg
+│   │   │       │   ├── logo-domindev-black-transparentbg-724x724.svg
+│   │   │       │   ├── logo-domindev-white-transparentbg-1448x1448.svg
+│   │   │       │   ├── logo-domindev-white-transparentbg-362x362.svg
+│   │   │       │   └── logo-domindev-white-transparentbg-724x724.svg
+│   │   │       ├── mockup.svg
+│   │   │       └── portfolio
+│   │   │           ├── project-001-1024x1024.webp
+│   │   │           ├── project-002-1024x1024.webp
+│   │   │           ├── project-003-1024x1024.webp
+│   │   │           ├── project-004-1024x1024.webp
+│   │   │           ├── project-005-1024x1024.webp
+│   │   │           ├── project-006-1024x1024.webp
+│   │   │           ├── project-007-1024x1024.webp
+│   │   │           └── project-008-1024x1024.webp
+│   │   ├── src
+│   │   │   ├── App.tsx
+│   │   │   ├── components
+│   │   │   │   ├── effects
+│   │   │   │   ├── layout
+│   │   │   │   │   ├── AccentColorToggle.scss
+│   │   │   │   │   ├── AccentColorToggle.tsx
+│   │   │   │   │   ├── AdminPanel.scss
+│   │   │   │   │   ├── AdminPanel.tsx
+│   │   │   │   │   ├── FloatingChat.scss
+│   │   │   │   │   ├── FloatingChat.tsx
+│   │   │   │   │   ├── FontToggle.scss
+│   │   │   │   │   ├── FontToggle.tsx
+│   │   │   │   │   ├── Footer.scss
+│   │   │   │   │   ├── Footer.tsx
+│   │   │   │   │   ├── Header.scss
+│   │   │   │   │   ├── Header.tsx
+│   │   │   │   │   ├── MarkdownRenderer.tsx
+│   │   │   │   │   ├── Preloader.scss
+│   │   │   │   │   ├── Preloader.tsx
+│   │   │   │   │   ├── ScrollProgress.scss
+│   │   │   │   │   ├── ScrollProgress.tsx
+│   │   │   │   │   ├── ScrollToTop.scss
+│   │   │   │   │   ├── ScrollToTop.tsx
+│   │   │   │   │   ├── TemperatureToggle.scss
+│   │   │   │   │   ├── TemperatureToggle.tsx
+│   │   │   │   │   ├── ThemeToggle.scss
+│   │   │   │   │   └── ThemeToggle.tsx
+│   │   │   │   └── sections
+│   │   │   │       ├── About.scss
+│   │   │   │       ├── About.tsx
+│   │   │   │       ├── Contact.scss
+│   │   │   │       ├── Contact.tsx
+│   │   │   │       ├── FAQ.scss
+│   │   │   │       ├── FAQ.tsx
+│   │   │   │       ├── Hero.scss
+│   │   │   │       ├── Hero.tsx
+│   │   │   │       ├── Portfolio.scss
+│   │   │   │       ├── Portfolio.tsx
+│   │   │   │       ├── Services.scss
+│   │   │   │       └── Services.tsx
+│   │   │   ├── contexts
+│   │   │   │   ├── TemperatureContext.tsx
+│   │   │   │   └── ThemeContext.tsx
+│   │   │   ├── data
+│   │   │   │   └── portfolioProjects.ts
+│   │   │   ├── hooks
+│   │   │   │   ├── useImageLoad.ts
+│   │   │   │   └── useThemeColors.ts
+│   │   │   ├── main.tsx
+│   │   │   ├── styles
+│   │   │   │   ├── global.scss
+│   │   │   │   └── _variables.scss
+│   │   │   └── vite-env.d.ts
+│   │   ├── tsconfig.json
+│   │   ├── tsconfig.tsbuildinfo
+│   │   ├── vite.config.d.ts
+│   │   ├── vite.config.js
+│   │   └── vite.config.ts
+│   └── shared
+│       ├── package-lock.json
+│       ├── package.json
+│       ├── src
+│       │   ├── index.ts
+│       │   ├── types
+│       │   │   ├── chat.ts
+│       │   │   └── index.ts
+│       │   └── utils
+│       │       ├── index.ts
+│       │       └── validation.ts
+│       ├── tsconfig.json
+│       └── tsconfig.tsbuildinfo
+├── README.md
+└── scripts
+    ├── backup.js
+    └── listTree.js
