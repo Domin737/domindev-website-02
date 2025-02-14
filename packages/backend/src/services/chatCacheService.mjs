@@ -1,12 +1,13 @@
-import { normalizeQuestion } from "@domindev-website-02/shared/dist/index.js";
 import { AppError } from "../middleware/errorHandler.mjs";
+import { normalizeQuestion } from "@domindev-website-02/shared/dist/utils/validation.js";
+
+const CACHE_TTL = 24 * 60 * 60; // 24 godziny
+const MAX_ANSWERS = 4; // Maksymalna liczba odpowiedzi w cache dla jednego pytania
 
 export class ChatCacheService {
   constructor(redisClient) {
     this.redisClient = redisClient;
     this.QUESTION_KEY_PREFIX = "q:";
-    this.MAX_CACHED_RESPONSES = 4;
-    this.CACHE_EXPIRY = 30 * 24 * 60 * 60; // 30 dni
   }
 
   async checkCache(question, temperature) {
@@ -14,52 +15,24 @@ export class ChatCacheService {
       throw new AppError("Pytanie nie może być puste", 400);
     }
 
-    const normalizedQuestion = normalizeQuestion(question);
-    const cacheKey = `${this.QUESTION_KEY_PREFIX}${normalizedQuestion}_temp_${temperature}`;
-    const indexKey = `${cacheKey}:index`;
-
     try {
-      const cacheType = await this.redisClient.type(cacheKey);
-      if (cacheType !== "list") {
-        await this.redisClient.del(cacheKey);
-        await this.redisClient.del(indexKey);
+      const normalizedQuestion = normalizeQuestion(question);
+      const cacheKey = `${this.QUESTION_KEY_PREFIX}${normalizedQuestion}_temp_${temperature}`;
+
+      // Pobierz odpowiedzi z cache
+      const answers = await this.redisClient.lRange(cacheKey, 0, -1);
+      if (!answers || answers.length === 0) {
         return null;
       }
 
-      const responses = await this.redisClient.lRange(cacheKey, 0, -1);
+      // Odśwież TTL
+      await this.redisClient.expire(cacheKey, CACHE_TTL);
 
-      if (!responses || responses.length < this.MAX_CACHED_RESPONSES) {
-        console.log("\n[Cache]: === GENEROWANIE NOWEJ ODPOWIEDZI ===");
-        console.log(
-          `[Cache]: Aktualnie w cache: ${responses ? responses.length : 0}/${
-            this.MAX_CACHED_RESPONSES
-          }`
-        );
-        return null;
-      }
+      // Wybierz losową odpowiedź z cache
+      const randomIndex = Math.floor(Math.random() * answers.length);
+      const answer = JSON.parse(answers[randomIndex]);
 
-      // Pobierz i zwiększ indeks
-      let currentIndex = await this.redisClient.get(indexKey);
-      currentIndex = currentIndex ? parseInt(currentIndex) : 0;
-      const nextIndex = (currentIndex + 1) % responses.length;
-
-      // Użyj transakcji do aktualizacji indeksu
-      const multi = this.redisClient.multi();
-      multi.set(indexKey, nextIndex);
-      multi.expire(indexKey, this.CACHE_EXPIRY);
-      await multi.exec();
-
-      const response = responses[currentIndex];
-
-      console.log("\n[Cache]: === ODPOWIEDŹ Z CACHE (SEKWENCYJNEGO) ===");
-      console.log(
-        `[Cache]: Wybrano odpowiedź ${currentIndex + 1}/${responses.length}`
-      );
-
-      return {
-        content: JSON.parse(response),
-        source: "cache",
-      };
+      return answer;
     } catch (error) {
       console.error("[Redis]: Błąd podczas sprawdzania cache:", error);
       throw new AppError("Nie udało się sprawdzić cache", 500, error.message);
@@ -71,119 +44,134 @@ export class ChatCacheService {
       throw new AppError("Pytanie nie może być puste", 400);
     }
 
-    if (!answer) {
+    if (!answer || answer.trim().length === 0) {
       throw new AppError("Odpowiedź nie może być pusta", 400);
     }
 
-    const normalizedQuestion = normalizeQuestion(question);
-    const cacheKey = `${this.QUESTION_KEY_PREFIX}${normalizedQuestion}_temp_${temperature}`;
-    const indexKey = `${cacheKey}:index`;
-
     try {
-      const cacheType = await this.redisClient.type(cacheKey);
-      if (cacheType !== "list") {
-        await this.redisClient.del(cacheKey);
-        await this.redisClient.del(indexKey);
-      }
+      const normalizedQuestion = normalizeQuestion(question);
+      const cacheKey = `${this.QUESTION_KEY_PREFIX}${normalizedQuestion}_temp_${temperature}`;
 
-      const currentResponses = await this.redisClient.lLen(cacheKey);
+      // Użyj pipeline do atomowej operacji
+      const pipeline = this.redisClient.multi();
 
-      // Sprawdź duplikaty
-      const existingResponses = await this.redisClient.lRange(cacheKey, 0, -1);
-      const isDuplicate = existingResponses.some(
-        (resp) => JSON.parse(resp) === answer
+      // Dodaj nową odpowiedź na początek listy
+      pipeline.lPush(
+        cacheKey,
+        JSON.stringify({
+          content: answer,
+          timestamp: Date.now(),
+        })
       );
 
-      if (isDuplicate) {
-        console.log("\n[Cache]: === POMINIĘTO DUPLIKAT ODPOWIEDZI ===");
-        return {
-          message: "Pominięto duplikat odpowiedzi",
-          currentCount: currentResponses,
-          maxCount: this.MAX_CACHED_RESPONSES,
-        };
+      // Przytnij listę do maksymalnej długości
+      pipeline.lTrim(cacheKey, 0, MAX_ANSWERS - 1);
+
+      // Ustaw TTL
+      pipeline.expire(cacheKey, CACHE_TTL);
+
+      const results = await pipeline.exec();
+
+      if (!results || !Array.isArray(results)) {
+        throw new Error("Błąd wykonania pipeline Redis");
       }
 
-      // Jeśli cache nie jest pełny, dodaj nową odpowiedź na koniec
-      if (!currentResponses || currentResponses < this.MAX_CACHED_RESPONSES) {
-        const multi = this.redisClient.multi();
-        multi.rPush(cacheKey, JSON.stringify(answer));
-        multi.expire(cacheKey, this.CACHE_EXPIRY);
-        await multi.exec();
+      const [pushResult, trimResult, expireResult] = results;
 
-        console.log("\n[Cache]: === ZAPISANO NOWĄ ODPOWIEDŹ ===");
-        console.log(
-          `[Cache]: Aktualna liczba odpowiedzi: ${
-            (currentResponses || 0) + 1
-          }/${this.MAX_CACHED_RESPONSES}`
-        );
-
-        return {
-          message: "Odpowiedź zapisana w cache",
-          currentCount: (currentResponses || 0) + 1,
-          maxCount: this.MAX_CACHED_RESPONSES,
-        };
+      if (!pushResult || !trimResult || !expireResult) {
+        throw new Error("Jedna z operacji Redis nie powiodła się");
       }
-
-      // Jeśli cache jest pełny, zastąp najstarszą odpowiedź
-      const multi = this.redisClient.multi();
-      multi.lPop(cacheKey); // Usuń najstarszą odpowiedź
-      multi.rPush(cacheKey, JSON.stringify(answer)); // Dodaj nową na koniec
-      multi.expire(cacheKey, this.CACHE_EXPIRY);
-      await multi.exec();
-
-      console.log("\n[Cache]: === ZASTĄPIONO NAJSTARSZĄ ODPOWIEDŹ ===");
-      console.log(
-        `[Cache]: Cache pozostaje pełny: ${this.MAX_CACHED_RESPONSES}/${this.MAX_CACHED_RESPONSES}`
-      );
 
       return {
-        message: "Zastąpiono najstarszą odpowiedź w cache",
-        currentCount: this.MAX_CACHED_RESPONSES,
-        maxCount: this.MAX_CACHED_RESPONSES,
+        message: "Zapisano odpowiedź w cache",
+        cacheKey,
+        answersCount: pushResult,
       };
     } catch (error) {
       console.error("[Redis]: Błąd podczas zapisywania do cache:", error);
-      throw new AppError(
-        "Nie udało się zapisać odpowiedzi w cache",
-        500,
-        error.message
-      );
+      throw new AppError("Nie udało się zapisać do cache", 500, error.message);
     }
   }
 
-  async clearCache(question, temperature) {
-    if (!question || question.trim().length === 0) {
-      throw new AppError("Pytanie nie może być puste", 400);
-    }
-
-    const normalizedQuestion = normalizeQuestion(question);
-    const cacheKey = `${this.QUESTION_KEY_PREFIX}${normalizedQuestion}_temp_${temperature}`;
-    const indexKey = `${cacheKey}:index`;
-
+  async clearCache() {
     try {
-      const exists = await this.redisClient.exists(cacheKey);
-      if (!exists) {
+      // Pobierz wszystkie klucze cache
+      const keys = await this.redisClient.keys(`${this.QUESTION_KEY_PREFIX}*`);
+
+      if (keys.length === 0) {
         return {
-          message: "Cache nie istnieje dla tego pytania",
-          clearedResponses: 0,
+          message: "Brak wpisów w cache do wyczyszczenia",
+          clearedKeys: 0,
         };
       }
 
-      const responses = await this.redisClient.lLen(cacheKey);
-
-      // Usuń zarówno cache jak i indeks
-      const multi = this.redisClient.multi();
-      multi.del(cacheKey);
-      multi.del(indexKey);
-      await multi.exec();
+      // Usuń wszystkie klucze
+      await this.redisClient.del(keys);
 
       return {
-        message: "Cache został wyczyszczony",
-        clearedResponses: responses,
+        message: "Wyczyszczono cache",
+        clearedKeys: keys.length,
       };
     } catch (error) {
       console.error("[Redis]: Błąd podczas czyszczenia cache:", error);
       throw new AppError("Nie udało się wyczyścić cache", 500, error.message);
+    }
+  }
+
+  async getCacheStats() {
+    try {
+      // Pobierz wszystkie klucze cache
+      const keys = await this.redisClient.keys(`${this.QUESTION_KEY_PREFIX}*`);
+
+      if (keys.length === 0) {
+        return {
+          totalKeys: 0,
+          temperatures: {},
+          expiredKeys: 0,
+        };
+      }
+
+      // Przygotuj pipeline do pobrania TTL dla każdego klucza
+      const pipeline = this.redisClient.multi();
+      for (const key of keys) {
+        pipeline.ttl(key);
+      }
+
+      const results = await pipeline.exec();
+
+      if (!results || !Array.isArray(results)) {
+        throw new Error("Błąd wykonania pipeline Redis");
+      }
+
+      // Zlicz klucze według temperatury i wygasłe
+      const temperatures = {};
+      let expiredKeys = 0;
+
+      keys.forEach((key, index) => {
+        const ttl = results[index];
+        if (ttl <= 0) {
+          expiredKeys++;
+        }
+
+        const tempMatch = key.match(/_temp_([\d.]+)$/);
+        if (tempMatch) {
+          const temp = tempMatch[1];
+          temperatures[temp] = (temperatures[temp] || 0) + 1;
+        }
+      });
+
+      return {
+        totalKeys: keys.length,
+        temperatures,
+        expiredKeys,
+      };
+    } catch (error) {
+      console.error("[Redis]: Błąd podczas pobierania statystyk cache:", error);
+      throw new AppError(
+        "Nie udało się pobrać statystyk cache",
+        500,
+        error.message
+      );
     }
   }
 }

@@ -1,12 +1,43 @@
 import { AppError } from "../middleware/errorHandler.mjs";
 import { ChatErrorCode } from "@domindev-website-02/shared/dist/types/chat.js";
 
+const CONTEXT_CACHE_TTL = 5 * 60 * 1000; // 5 minut
+const CLEANUP_INTERVAL = 60 * 60 * 1000; // 1 godzina
+
 export class ChatContextService {
   constructor(redisClient) {
     this.redisClient = redisClient;
     this.CONTEXT_KEY_PREFIX = "ctx:";
     this.CONTEXT_TTL = 30 * 60; // 30 minut
-    this.MAX_CONTEXT_LENGTH = 10; // maksymalna liczba wiadomości w kontekście
+    this.MAX_CONTEXT_LENGTH = 20; // maksymalna liczba wiadomości w kontekście
+    this.contextCache = new Map();
+
+    // Uruchom czyszczenie cache co godzinę
+    setInterval(() => this.cleanupCache(), CLEANUP_INTERVAL);
+  }
+
+  cleanupCache() {
+    const now = Date.now();
+    for (const [key, value] of this.contextCache.entries()) {
+      if (now - value.timestamp > CONTEXT_CACHE_TTL) {
+        this.contextCache.delete(key);
+      }
+    }
+  }
+
+  getFromCache(key) {
+    const cached = this.contextCache.get(key);
+    if (cached && Date.now() - cached.timestamp < CONTEXT_CACHE_TTL) {
+      return cached.data;
+    }
+    return null;
+  }
+
+  setInCache(key, data) {
+    this.contextCache.set(key, {
+      data,
+      timestamp: Date.now(),
+    });
   }
 
   async getContext(sessionId) {
@@ -18,6 +49,12 @@ export class ChatContextService {
 
     const contextKey = `${this.CONTEXT_KEY_PREFIX}${sessionId}`;
     console.log("[Context]: Pobieranie kontekstu dla klucza:", contextKey);
+
+    // Sprawdź cache w pamięci
+    const cachedContext = this.getFromCache(contextKey);
+    if (cachedContext) {
+      return cachedContext;
+    }
 
     try {
       // Użyj pipeline do pobrania wiadomości i odświeżenia TTL
@@ -55,6 +92,10 @@ export class ChatContextService {
         .filter(Boolean);
 
       console.log("[Context]: Przetworzone wiadomości:", messages);
+
+      // Zapisz w cache
+      this.setInCache(contextKey, messages);
+
       return messages;
     } catch (error) {
       console.error("[Redis]: Błąd podczas pobierania kontekstu:", error);
@@ -120,6 +161,9 @@ export class ChatContextService {
         throw new Error("Jedna z operacji Redis nie powiodła się");
       }
 
+      // Invalidate cache
+      this.contextCache.delete(contextKey);
+
       console.log("\n[Context]: === ZAKTUALIZOWANO KONTEKST ===");
       console.log(`[Context]: Sesja: ${sessionId}`);
       console.log(`[Context]: Rola: ${role}`);
@@ -152,6 +196,9 @@ export class ChatContextService {
       const result = await this.redisClient.del(contextKey);
       console.log("[Context]: Wynik czyszczenia:", result);
 
+      // Invalidate cache
+      this.contextCache.delete(contextKey);
+
       console.log("\n[Context]: === WYCZYSZCZONO KONTEKST ===");
       console.log(`[Context]: Sesja: ${sessionId}`);
 
@@ -178,6 +225,7 @@ export class ChatContextService {
         return {
           activeSessions: 0,
           sessions: [],
+          cacheSize: this.contextCache.size,
         };
       }
 
@@ -217,6 +265,7 @@ export class ChatContextService {
           sessionId,
           messageCount: lLenResult,
           ttl: ttlResult,
+          inCache: this.contextCache.has(keys[i]),
         });
       }
 
@@ -225,6 +274,7 @@ export class ChatContextService {
       return {
         activeSessions: stats.length,
         sessions: stats,
+        cacheSize: this.contextCache.size,
       };
     } catch (error) {
       console.error("[Redis]: Błąd podczas pobierania statystyk:", error);

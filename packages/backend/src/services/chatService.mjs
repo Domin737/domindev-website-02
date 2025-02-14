@@ -15,6 +15,8 @@ const MAX_TOKENS_PER_REQUEST = 4000;
 const REQUEST_TIMEOUT = 30000;
 const MAX_REQUESTS_PER_MINUTE = 50;
 const MAX_CONTEXT_TOKENS = 2000;
+const RATE_LIMIT_WINDOW = 60000; // 1 minuta
+const MODEL_CACHE_TTL = 30 * 60 * 1000; // 30 minut
 
 export class ChatService {
   constructor() {
@@ -25,8 +27,8 @@ export class ChatService {
 
     this.stats = {
       messageCount: 0,
-      requestsInLastMinute: 0,
-      lastRequestTime: Date.now(),
+      requestTimestamps: [],
+      modelLastInitialized: 0,
     };
 
     this.initializeModel();
@@ -39,6 +41,12 @@ export class ChatService {
       throw new AppError("Brak klucza API OpenAI", 500);
     }
 
+    // Sprawdź czy model wymaga reinicjalizacji
+    const now = Date.now();
+    if (now - this.stats.modelLastInitialized < MODEL_CACHE_TTL && this.model) {
+      return;
+    }
+
     this.model = new ChatOpenAI({
       openAIApiKey: process.env.OPENAI_API_KEY,
       temperature: this.config.temperature,
@@ -48,6 +56,8 @@ export class ChatService {
       timeout: REQUEST_TIMEOUT,
       maxRetries: MAX_RETRIES,
     });
+
+    this.stats.modelLastInitialized = now;
   }
 
   initializePrompt() {
@@ -94,13 +104,13 @@ export class ChatService {
   }
 
   initializeRateLimiter() {
+    // Czyść stare timestampy co minutę
     setInterval(() => {
       const now = Date.now();
-      if (now - this.stats.lastRequestTime >= 60000) {
-        this.stats.requestsInLastMinute = 0;
-        this.stats.lastRequestTime = now;
-      }
-    }, 60000);
+      this.stats.requestTimestamps = this.stats.requestTimestamps.filter(
+        (timestamp) => now - timestamp < RATE_LIMIT_WINDOW
+      );
+    }, RATE_LIMIT_WINDOW);
   }
 
   async sleep(ms) {
@@ -108,10 +118,15 @@ export class ChatService {
   }
 
   async retryWithExponentialBackoff(fn, retries = MAX_RETRIES) {
+    let lastError;
     for (let i = 0; i < retries; i++) {
       try {
         return await fn();
       } catch (error) {
+        lastError = error;
+        if (error.message.includes("timeout") || error.code === 408) {
+          throw error; // Nie ponawiaj przy timeoutach
+        }
         if (i === retries - 1) throw error;
         const delay = RETRY_DELAY * Math.pow(2, i);
         console.log(
@@ -120,23 +135,34 @@ export class ChatService {
         await this.sleep(delay);
       }
     }
+    throw lastError;
   }
 
   checkRateLimit() {
     const now = Date.now();
-    if (now - this.stats.lastRequestTime >= 60000) {
-      this.stats.requestsInLastMinute = 1;
-      this.stats.lastRequestTime = now;
-    } else {
-      this.stats.requestsInLastMinute++;
+    this.stats.requestTimestamps = this.stats.requestTimestamps.filter(
+      (timestamp) => now - timestamp < RATE_LIMIT_WINDOW
+    );
+
+    if (this.stats.requestTimestamps.length >= MAX_REQUESTS_PER_MINUTE) {
+      const oldestRequest = this.stats.requestTimestamps[0];
+      const timeToWait = RATE_LIMIT_WINDOW - (now - oldestRequest);
+      throw new AppError(
+        `Przekroczono limit zapytań. Spróbuj za ${Math.ceil(
+          timeToWait / 1000
+        )} sekund`,
+        429
+      );
     }
 
-    if (this.stats.requestsInLastMinute > MAX_REQUESTS_PER_MINUTE) {
-      throw new AppError("Przekroczono limit zapytań na minutę", 429);
-    }
+    this.stats.requestTimestamps.push(now);
   }
 
   prepareContext(context = []) {
+    if (!Array.isArray(context) || context.length === 0) {
+      return [];
+    }
+
     // Przekształć kontekst na format LangChain
     const messages = context.map((msg) => ({
       type: msg.role === "assistant" ? "ai" : msg.role,
@@ -144,31 +170,35 @@ export class ChatService {
     }));
 
     // Oblicz całkowitą liczbę tokenów w kontekście
-    const contextTokens = messages.reduce(
-      (sum, msg) => sum + estimateTokenCount(msg.content),
-      0
-    );
+    let totalTokens = 0;
+    const messagesWithTokens = messages.map((msg) => ({
+      ...msg,
+      tokens: estimateTokenCount(msg.content),
+    }));
 
-    // Jeśli kontekst jest za duży, usuń najstarsze wiadomości
-    if (contextTokens > MAX_CONTEXT_TOKENS) {
-      console.log(
-        `[ChatBot]: Kontekst przekracza limit tokenów (${contextTokens}/${MAX_CONTEXT_TOKENS})`
-      );
-      while (
-        messages.length > 0 &&
-        messages.reduce(
-          (sum, msg) => sum + estimateTokenCount(msg.content),
-          0
-        ) > MAX_CONTEXT_TOKENS
-      ) {
-        messages.shift();
+    // Zachowaj najnowsze wiadomości w ramach limitu tokenów
+    const filteredMessages = [];
+    for (let i = messagesWithTokens.length - 1; i >= 0; i--) {
+      const msg = messagesWithTokens[i];
+      if (totalTokens + msg.tokens <= MAX_CONTEXT_TOKENS) {
+        totalTokens += msg.tokens;
+        filteredMessages.unshift({
+          type: msg.type,
+          content: msg.content,
+        });
+      } else {
+        break;
       }
-      console.log(
-        `[ChatBot]: Przycięto kontekst do ${messages.length} wiadomości`
-      );
     }
 
-    return messages;
+    if (messages.length !== filteredMessages.length) {
+      console.log(
+        `[ChatBot]: Przycięto kontekst z ${messages.length} do ${filteredMessages.length} wiadomości`
+      );
+      console.log(`[ChatBot]: Całkowita liczba tokenów: ${totalTokens}`);
+    }
+
+    return filteredMessages;
   }
 
   async processMessage(message, context = [], abortSignal) {
@@ -200,12 +230,24 @@ export class ChatService {
           throw new AppError("Zapytanie zostało przerwane", 408);
         }
 
+        // Sprawdź czy model wymaga reinicjalizacji
+        this.initializeModel();
+
         const chatHistory = this.prepareContext(context);
 
-        const response = await this.chain.invoke({
-          input: message,
-          chat_history: chatHistory,
-        });
+        const response = await Promise.race([
+          this.chain.invoke({
+            input: message,
+            chat_history: chatHistory,
+          }),
+          new Promise((_, reject) => {
+            if (abortSignal) {
+              abortSignal.addEventListener("abort", () => {
+                reject(new AppError("Zapytanie zostało przerwane", 408));
+              });
+            }
+          }),
+        ]);
 
         if (abortSignal?.aborted) {
           throw new AppError("Zapytanie zostało przerwane", 408);
@@ -277,7 +319,8 @@ export class ChatService {
     console.log(`[ChatBot]: Nowa temperatura: ${this.config.temperature}`);
     console.log("[ChatBot]: ========================\n");
 
-    this.initializeModel();
+    // Wymuś reinicjalizację modelu przy następnym zapytaniu
+    this.stats.modelLastInitialized = 0;
 
     return {
       message: "Zaktualizowano konfigurację",
@@ -289,8 +332,11 @@ export class ChatService {
   getConfig() {
     return {
       temperature: this.config.temperature,
-      requestsInLastMinute: this.stats.requestsInLastMinute,
+      requestsInLastMinute: this.stats.requestTimestamps.length,
       messageCount: this.stats.messageCount,
+      modelAge: Math.floor(
+        (Date.now() - this.stats.modelLastInitialized) / 1000
+      ),
     };
   }
 }
