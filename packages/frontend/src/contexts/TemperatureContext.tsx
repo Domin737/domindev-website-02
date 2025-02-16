@@ -15,6 +15,12 @@ const TemperatureContext = createContext<TemperatureContextType | undefined>(
   undefined
 );
 
+const validateTemperature = (temp: number): number => {
+  if (temp < 0) return 0;
+  if (temp > 1) return 1;
+  return temp;
+};
+
 export const TemperatureProvider = ({ children }: { children: ReactNode }) => {
   const [temperature, setTemperature] = useState(0.5);
   const listenersRef = useRef<Array<() => void>>([]);
@@ -32,8 +38,9 @@ export const TemperatureProvider = ({ children }: { children: ReactNode }) => {
 
   const updateTemperature = async (temp: number) => {
     try {
-      await axios.put(`${API_URL}/api/chat/config`, { temperature: temp });
-      setTemperature(temp);
+      const validTemp = validateTemperature(temp);
+      await axios.put(`${API_URL}/api/chat/config`, { temperature: validTemp });
+      setTemperature(validTemp);
       // Wywołaj handleTemperatureChange po zaktualizowaniu stanu
       setTimeout(handleTemperatureChange, 0);
     } catch (error) {
@@ -52,11 +59,15 @@ export const TemperatureProvider = ({ children }: { children: ReactNode }) => {
     };
   };
 
+  const safeSetTemperature = (temp: number) => {
+    setTemperature(validateTemperature(temp));
+  };
+
   return (
     <TemperatureContext.Provider
       value={{
         temperature,
-        setTemperature,
+        setTemperature: safeSetTemperature,
         updateTemperature,
         onTemperatureChange: handleTemperatureChange,
         addTemperatureListener,

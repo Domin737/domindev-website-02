@@ -36,8 +36,8 @@ export const createChatRouter = (chatController, moderationController) => {
   const validateConfig = [
     body("temperature")
       .optional()
-      .isFloat({ min: 0, max: 2 })
-      .withMessage("Temperatura musi być wartością między 0 a 2"),
+      .isFloat({ min: 0, max: 1 })
+      .withMessage("Temperatura musi być wartością między 0 a 1"),
     body("max_tokens")
       .optional()
       .isInt({ min: 100, max: 4000 })
@@ -71,17 +71,35 @@ export const createChatRouter = (chatController, moderationController) => {
     chatController.processMessage.bind(chatController)
   );
 
+  // Endpointy kontekstu
+  router.get(
+    "/api/chat/context",
+    chatController.getContext.bind(chatController)
+  );
+
+  router.delete(
+    "/api/chat/context",
+    chatController.clearContext.bind(chatController)
+  );
+
+  router.get(
+    "/api/chat/context/stats",
+    chatController.getContextStats.bind(chatController)
+  );
+
   // Endpointy FAQ i statystyk
   router.get(
     "/api/chat/faq",
     validateFAQParams,
     chatController.getFAQ.bind(chatController)
   );
+
   router.get(
     "/api/chat/stats",
     validateStatsParams,
     chatController.getQuestionStats.bind(chatController)
   );
+
   router.delete(
     "/api/chat/stats",
     chatController.clearStats.bind(chatController)
@@ -89,6 +107,7 @@ export const createChatRouter = (chatController, moderationController) => {
 
   // Endpointy konfiguracji
   router.get("/api/chat/config", chatController.getConfig.bind(chatController));
+
   router.put(
     "/api/chat/config",
     validateConfig,

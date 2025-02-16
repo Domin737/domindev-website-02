@@ -1,78 +1,67 @@
-export interface ChatConfig {
-  temperature: number; // Wartość między 0 a 1
-  max_tokens: number;
-}
-
-export interface ChatMessage {
-  message: string;
-}
-
-export interface ChatResponse {
-  reply: string;
-  error?: string;
-}
-
-export interface ChatStats {
-  message: string;
-  question: string;
-  useCount: number;
-}
-
-export interface FAQItem {
-  question: string;
-  answers: ChatResponse[];
-  useCount: number;
-}
-
-export interface FAQResponse {
-  questions: FAQItem[];
-  total: number;
-  limit: number;
-}
-
-// Typy dla cache i Redis
-export interface CacheClearOptions {
-  strategy: "all" | "temperature" | "expired" | "stats";
-  temperature?: number;
-}
-
-export interface CacheClearResponse {
-  message: string;
-  strategy: string;
-  clearedKeys: number;
-}
-
-// Typy dla błędów
 export enum ChatErrorCode {
   EMPTY_MESSAGE = "EMPTY_MESSAGE",
   MESSAGE_TOO_LONG = "MESSAGE_TOO_LONG",
-  RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED",
-  MODERATION_FAILED = "MODERATION_FAILED",
-  CACHE_ERROR = "CACHE_ERROR",
+  SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE",
   STATS_ERROR = "STATS_ERROR",
   INVALID_TEMPERATURE = "INVALID_TEMPERATURE",
-  SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE",
+  CONTEXT_ERROR = "CONTEXT_ERROR",
+  SESSION_ERROR = "SESSION_ERROR",
+  CACHE_ERROR = "CACHE_ERROR",
 }
 
-export interface ChatError {
-  code: ChatErrorCode;
+export interface ChatMessage {
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp: number;
+}
+
+export interface ChatContext {
+  messages: ChatMessage[];
+  sessionId: string;
+}
+
+export interface ChatContextStats {
+  activeSessions: number;
+  sessions: {
+    sessionId: string;
+    messageCount: number;
+    ttl: number;
+  }[];
+}
+
+export interface ChatContextResponse {
   message: string;
-  details?: any;
+  sessionId: string;
+  role?: string;
 }
 
-// Typy dla walidacji
-export interface ValidationResult {
-  isValid: boolean;
-  error?: ChatError;
-}
-
-// Typy dla konfiguracji
-export interface ConfigUpdateRequest {
-  temperature?: number; // Wartość między 0 a 1
-  max_tokens?: number;
-}
-
-export interface ConfigUpdateResponse {
+export interface ChatContextError {
   message: string;
-  config: ChatConfig;
+  code: number;
+  details?: string;
+}
+
+export interface ChatTemperature {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+}
+
+export interface ChatResponse {
+  content: string;
+  source?: "cache" | "model";
+  temperature?: number;
+  timestamp?: number;
+}
+
+export interface ChatStats {
+  questions: {
+    question: string;
+    answers: ChatResponse[];
+    useCount: number;
+    temperature?: number;
+  }[];
+  total: number;
+  limit: number;
 }

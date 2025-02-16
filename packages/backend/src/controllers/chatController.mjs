@@ -2,10 +2,33 @@ import { ChatErrorCode } from "@domindev-website-02/shared/dist/types/chat.js";
 import { AppError } from "../middleware/errorHandler.mjs";
 
 export class ChatController {
-  constructor(chatService, chatCacheService, chatStatsService) {
+  constructor(
+    chatService,
+    chatCacheService,
+    chatStatsService,
+    chatContextService
+  ) {
     this.chatService = chatService;
     this.chatCacheService = chatCacheService;
     this.chatStatsService = chatStatsService;
+    this.chatContextService = chatContextService;
+  }
+
+  getSessionId(req) {
+    console.log("[Session]: Sprawdzanie sesji:", {
+      session: req.session,
+      cookies: req.cookies,
+      headers: req.headers,
+    });
+
+    if (!req.session) {
+      throw new AppError("Brak sesji", 500, {
+        code: ChatErrorCode.SESSION_ERROR,
+      });
+    }
+
+    console.log("[Session]: Używam ID sesji:", req.sessionID);
+    return req.sessionID;
   }
 
   async validateMessage(message) {
@@ -25,46 +48,104 @@ export class ChatController {
 
   async processMessage(req, res, next) {
     try {
+      console.log("[Chat]: Otrzymano nową wiadomość");
+      console.log("[Chat]: Session:", req.session);
+      console.log("[Chat]: Cookies:", req.cookies);
+      console.log("[Chat]: Headers:", {
+        cookie: req.headers.cookie,
+        origin: req.headers.origin,
+        referer: req.headers.referer,
+      });
+
       const { message } = req.body;
       await this.validateMessage(message);
 
+      const sessionId = this.getSessionId(req);
+      console.log("[Chat]: Używam sessionId:", sessionId);
+
       const temperature = this.chatService.getConfig().temperature;
 
-      // Sprawdź cache
       try {
-        const cachedResponse = await this.chatCacheService.checkCache(
-          message,
-          temperature
-        );
-        if (cachedResponse) {
-          await this.chatStatsService.updateQuestionStats(message, temperature);
-          return res.json({ reply: cachedResponse.content });
-        }
-      } catch (error) {
-        console.error("[Cache]: Błąd podczas sprawdzania cache:", error);
-        // Kontynuuj bez cache w przypadku błędu
-      }
+        // Dodaj wiadomość użytkownika do kontekstu
+        console.log("[Chat]: Dodaję wiadomość użytkownika do kontekstu");
+        await this.chatContextService.addToContext(sessionId, message, "user");
 
-      // Generuj nową odpowiedź
-      const response = await this.chatService.processMessage(message);
+        // Pobierz kontekst rozmowy
+        console.log("[Chat]: Pobieram kontekst rozmowy");
+        const context = await this.chatContextService.getContext(sessionId);
+        console.log("[Chat]: Aktualny kontekst:", context);
 
-      // Zapisz do cache i aktualizuj statystyki równolegle
-      try {
-        await Promise.allSettled([
-          this.chatCacheService.saveToCache(
+        // Sprawdź cache
+        try {
+          console.log("[Chat]: Sprawdzam cache");
+          const cachedResponse = await this.chatCacheService.checkCache(
             message,
-            response.content,
             temperature
-          ),
-          this.chatStatsService.updateQuestionStats(message, temperature),
-        ]);
-      } catch (error) {
-        console.error("[Cache/Stats]: Błąd podczas zapisywania:", error);
-        // Kontynuuj mimo błędu cache/statystyk
-      }
+          );
+          if (cachedResponse) {
+            console.log("[Chat]: Znaleziono odpowiedź w cache");
+            // Dodaj odpowiedź z cache do kontekstu
+            await this.chatContextService.addToContext(
+              sessionId,
+              cachedResponse.content,
+              "assistant"
+            );
+            await this.chatStatsService.updateQuestionStats(
+              message,
+              temperature
+            );
+            return res.json({
+              reply: cachedResponse.content,
+              context: await this.chatContextService.getContext(sessionId),
+            });
+          }
+        } catch (error) {
+          console.error("[Cache]: Błąd podczas sprawdzania cache:", error);
+          // Kontynuuj bez cache w przypadku błędu
+        }
 
-      res.json({ reply: response.content });
+        // Generuj nową odpowiedź z uwzględnieniem kontekstu
+        console.log("[Chat]: Generuję nową odpowiedź");
+        const response = await this.chatService.processMessage(
+          message,
+          context
+        );
+
+        // Dodaj odpowiedź do kontekstu
+        console.log("[Chat]: Dodaję odpowiedź do kontekstu");
+        await this.chatContextService.addToContext(
+          sessionId,
+          response.content,
+          "assistant"
+        );
+
+        // Zapisz do cache i aktualizuj statystyki równolegle
+        try {
+          console.log("[Chat]: Zapisuję do cache i aktualizuję statystyki");
+          await Promise.allSettled([
+            this.chatCacheService.saveToCache(
+              message,
+              response.content,
+              temperature
+            ),
+            this.chatStatsService.updateQuestionStats(message, temperature),
+          ]);
+        } catch (error) {
+          console.error("[Cache/Stats]: Błąd podczas zapisywania:", error);
+          // Kontynuuj mimo błędu cache/statystyk
+        }
+
+        console.log("[Chat]: Wysyłam odpowiedź");
+        res.json({
+          reply: response.content,
+          context: await this.chatContextService.getContext(sessionId),
+        });
+      } catch (error) {
+        console.error("[Chat]: Błąd podczas przetwarzania:", error);
+        throw error;
+      }
     } catch (error) {
+      console.error("[Chat]: Błąd główny:", error);
       if (error instanceof AppError) {
         next(error);
       } else {
@@ -75,6 +156,50 @@ export class ChatController {
           })
         );
       }
+    }
+  }
+
+  async getContext(req, res, next) {
+    try {
+      const sessionId = this.getSessionId(req);
+      const context = await this.chatContextService.getContext(sessionId);
+      res.json({ context });
+    } catch (error) {
+      next(
+        new AppError("Błąd pobierania kontekstu", 500, {
+          code: ChatErrorCode.CONTEXT_ERROR,
+          details: error.message,
+        })
+      );
+    }
+  }
+
+  async clearContext(req, res, next) {
+    try {
+      const sessionId = this.getSessionId(req);
+      const result = await this.chatContextService.clearContext(sessionId);
+      res.json(result);
+    } catch (error) {
+      next(
+        new AppError("Błąd czyszczenia kontekstu", 500, {
+          code: ChatErrorCode.CONTEXT_ERROR,
+          details: error.message,
+        })
+      );
+    }
+  }
+
+  async getContextStats(req, res, next) {
+    try {
+      const stats = await this.chatContextService.getContextStats();
+      res.json(stats);
+    } catch (error) {
+      next(
+        new AppError("Błąd pobierania statystyk kontekstu", 500, {
+          code: ChatErrorCode.CONTEXT_ERROR,
+          details: error.message,
+        })
+      );
     }
   }
 
@@ -137,13 +262,13 @@ export class ChatController {
       const { temperature, max_tokens } = req.body;
 
       if (temperature !== undefined) {
-        if (temperature < 0 || temperature > 2) {
+        if (temperature < 0 || temperature > 1) {
           throw new AppError(
-            "Temperatura musi być wartością między 0 a 2",
+            "Temperatura musi być wartością między 0 a 1",
             400,
             {
               code: ChatErrorCode.INVALID_TEMPERATURE,
-              details: { temperature, min: 0, max: 2 },
+              details: { temperature, min: 0, max: 1 },
             }
           );
         }

@@ -1,8 +1,17 @@
-import "dotenv/config";
+import { config } from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Załaduj zmienne środowiskowe z pliku .env w katalogu backend
+config({ path: join(__dirname, "../../.env") });
 import { createClient } from "redis";
 
 // Prefiksy kluczy w Redis
 const QUESTION_KEY_PREFIX = "q:"; // dla pytań/odpowiedzi chatbota
+const CONTEXT_KEY_PREFIX = "ctx:"; // dla kontekstu rozmów
 const BANNED_WORDS_KEY = "banned_words"; // dla zabronionych słów
 const STATS_KEY_PREFIX = "stats:"; // dla statystyk
 const STATS_SORTED_SET = "question_stats"; // dla rankingu pytań
@@ -30,10 +39,13 @@ const clearCache = async (strategy, temperature) => {
     switch (strategy) {
       case "all":
         // Wyczyść wszystkie klucze związane z chatem
-        const allKeys = await redisClient.keys(`${QUESTION_KEY_PREFIX}*`);
-        if (allKeys.length > 0) {
-          await redisClient.del(allKeys);
-          clearedKeys = allKeys.length;
+        const cacheKeys = await redisClient.keys(`${QUESTION_KEY_PREFIX}*`);
+        const contextKeys = await redisClient.keys(`${CONTEXT_KEY_PREFIX}*`);
+        const keysToDelete = [...cacheKeys, ...contextKeys];
+
+        if (keysToDelete.length > 0) {
+          await redisClient.del(keysToDelete);
+          clearedKeys = keysToDelete.length;
           console.log(
             `[Cache]: Wyczyszczono wszystkie klucze cache (${clearedKeys})`
           );
@@ -74,8 +86,15 @@ const clearCache = async (strategy, temperature) => {
         break;
 
       case "expired":
-        const allCacheKeys = await redisClient.keys(`${QUESTION_KEY_PREFIX}*`);
-        for (const key of allCacheKeys) {
+        const expiredCacheKeys = await redisClient.keys(
+          `${QUESTION_KEY_PREFIX}*`
+        );
+        const expiredContextKeys = await redisClient.keys(
+          `${CONTEXT_KEY_PREFIX}*`
+        );
+        const expiredKeys = [...expiredCacheKeys, ...expiredContextKeys];
+
+        for (const key of expiredKeys) {
           const ttl = await redisClient.ttl(key);
           if (ttl <= 0) {
             await redisClient.del(key);
@@ -116,11 +135,12 @@ const showStats = async () => {
     await redisClient.connect();
 
     // Pobierz wszystkie klucze związane z chatem
-    const allKeys = await redisClient.keys(`${QUESTION_KEY_PREFIX}*`);
+    const cacheKeys = await redisClient.keys(`${QUESTION_KEY_PREFIX}*`);
+    const contextKeys = await redisClient.keys(`${CONTEXT_KEY_PREFIX}*`);
 
     // Statystyki według temperatury
     const tempStats = new Map();
-    for (const key of allKeys) {
+    for (const key of cacheKeys) {
       const tempMatch = key.match(/_temp_([\d.]+)$/);
       if (tempMatch) {
         const temp = tempMatch[1];
@@ -130,7 +150,10 @@ const showStats = async () => {
 
     // Wyświetl statystyki cache
     console.log("\n=== STATYSTYKI CACHE ===");
-    console.log(`Całkowita liczba wpisów w cache chatbota: ${allKeys.length}`);
+    console.log(
+      `Całkowita liczba wpisów w cache chatbota: ${cacheKeys.length}`
+    );
+    console.log(`Liczba aktywnych kontekstów rozmów: ${contextKeys.length}`);
 
     if (tempStats.size > 0) {
       console.log("\nPodział według temperatury:");
@@ -141,6 +164,7 @@ const showStats = async () => {
 
     // Sprawdź wygasłe klucze
     let expiredCount = 0;
+    const allKeys = [...cacheKeys, ...contextKeys];
     for (const key of allKeys) {
       const ttl = await redisClient.ttl(key);
       if (ttl <= 0) expiredCount++;
@@ -199,8 +223,8 @@ Użycie:
   npm run cache:stats
 
 Strategie czyszczenia:
-  - expired (domyślna) - usuwa tylko wygasłe wpisy z cache chatbota
-  - all               - usuwa wszystkie wpisy z cache chatbota i statystyki
+  - expired (domyślna) - usuwa tylko wygasłe wpisy z cache chatbota i kontekstu rozmów
+  - all               - usuwa wszystkie wpisy z cache chatbota, kontekstu rozmów i statystyki
   - stats            - usuwa tylko statystyki pytań
   - temperature      - usuwa wpisy z cache chatbota dla podanej temperatury (wymagany parametr temperatury)
 

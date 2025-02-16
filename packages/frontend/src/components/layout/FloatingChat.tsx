@@ -8,6 +8,7 @@ import "./FloatingChat.scss";
 
 interface ChatResponse {
   reply: string;
+  context?: any;
 }
 
 interface ChatMessage {
@@ -35,6 +36,15 @@ interface FAQResponse {
 
 const API_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
+// Konfiguracja axios z obsługą ciasteczek
+const api = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
 interface FloatingChatProps {}
 
 const FloatingChat: React.FC<FloatingChatProps> = () => {
@@ -42,7 +52,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
 
-  const { addTemperatureListener, temperature } = useTemperature();
+  const { temperature } = useTemperature();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -52,8 +62,8 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
   const [showLongLoadingMessage, setShowLongLoadingMessage] = useState(false);
   const [frequentQuestions, setFrequentQuestions] = useState<FAQItem[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(true);
-  const loadingTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
-  const inactivityTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastTemperatureRef = useRef(temperature);
 
   // Resetuj timer nieaktywności
@@ -91,7 +101,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
 
   const fetchFrequentQuestions = async () => {
     try {
-      const response = await axios.get<FAQResponse>(`${API_URL}/api/chat/faq`);
+      const response = await api.get<FAQResponse>("/api/chat/faq");
       setFrequentQuestions(response.data.questions);
     } catch (error) {
       console.error("Błąd podczas pobierania FAQ:", error);
@@ -145,8 +155,6 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
     };
   }, []);
 
-  const [currentStreamedResponse, setCurrentStreamedResponse] = useState("");
-
   // Funkcja do wysyłania wiadomości i obsługi odpowiedzi
   const handleMessageSend = async (message: string, fromSuggestion = false) => {
     resetInactivityTimer();
@@ -155,7 +163,6 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
     setMessages((prev) => [...prev, { text: message, user: "Ty" }]);
     setIsLoading(true);
     setShowLongLoadingMessage(false);
-    setCurrentStreamedResponse("");
 
     // Jeśli wiadomość pochodzi z sugestii, ukryj panel sugestii
     if (fromSuggestion) {
@@ -168,7 +175,7 @@ const FloatingChat: React.FC<FloatingChatProps> = () => {
     }, 10000);
 
     try {
-      const response = await axios.post<ChatResponse>(`${API_URL}/api/chat`, {
+      const response = await api.post<ChatResponse>("/api/chat", {
         message: message,
       });
 
