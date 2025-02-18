@@ -105,30 +105,21 @@ const Hero = () => {
           initial="hidden"
           animate="visible"
         >
-          <motion.h1 variants={itemVariants} className="hero__title">
-            Tworzę nowoczesne i skuteczne strony WordPress
-          </motion.h1>
-          <motion.p variants={itemVariants} className="hero__subtitle">
-            Specjalizuję się w projektach, które przyciągają klientów i
-            zwiększają zyski. Łączę nowoczesny design z wydajnym kodem.
-          </motion.p>
+          <motion.div className="hero__text" variants={itemVariants}>
+            <motion.h1 className="hero__title">
+              Tworzę nowoczesne i skuteczne strony WordPress
+            </motion.h1>
+            <motion.p className="hero__subtitle">
+              Specjalizuję się w projektach, które przyciągają klientów i
+              zwiększają zyski. Łączę nowoczesny design z wydajnym kodem.
+            </motion.p>
+          </motion.div>
+
           <motion.div variants={itemVariants} className="hero__cta">
             <a href="#portfolio" className="btn btn-primary">
               Zobacz portfolio
             </a>
-            <a href="#contact" className="btn btn-secondary">
-              Skontaktuj się
-            </a>
           </motion.div>
-        </motion.div>
-
-        <motion.div
-          className="hero__image"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <img src="/images/mockup.svg" alt="WordPress Development" />
         </motion.div>
       </div>
     </section>
