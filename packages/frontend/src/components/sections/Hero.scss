@@ -7,26 +7,11 @@
   align-items: center;
   padding: clamp($spacing-xl, 10vw, calc($spacing-xl * 2)) 0;
   overflow: hidden;
-  background: linear-gradient(
-    180deg,
-    $color-background 0%,
-    rgba($color-dark-purple, 0.95) 100%
-  );
-
-  &__canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 1;
-    opacity: 0.3;
-    mix-blend-mode: screen;
-  }
+  background: $color-background;
 
   &__container {
     position: relative;
-    z-index: 2;
+    z-index: 1;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -35,7 +20,6 @@
 
   &__content {
     max-width: 800px;
-    animation: fadeInUp 1s ease-out;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -52,13 +36,14 @@
   &__title {
     font-size: clamp(2.5rem, 5vw, 4.5rem);
     line-height: 1.1;
-    background: $gradient-text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    font-weight: $font-weight-black;
+    color: $color-text !important;
+    font-weight: $font-weight-bold;
     letter-spacing: -0.02em;
-    text-shadow: $neon-glow-primary;
     position: relative;
+    background: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    text-shadow: none !important;
 
     &::after {
       content: "";
@@ -68,8 +53,7 @@
       transform: translateX(-50%);
       width: 60%;
       height: 2px;
-      background: $gradient-primary;
-      box-shadow: $neon-glow-primary;
+      background: $color-text;
     }
   }
 
@@ -79,13 +63,11 @@
     line-height: 1.6;
     max-width: 600px;
     margin: 0 auto;
-    animation: fadeInUp 1s ease-out 0.2s backwards;
   }
 
   &__cta {
     display: flex;
     justify-content: center;
-    animation: fadeInUp 1s ease-out 0.4s backwards;
     margin-top: $spacing-md;
 
     @media (max-width: $breakpoint-sm) {
@@ -101,29 +83,19 @@
       text-align: center;
       line-height: 44px;
       padding: 0 $spacing-md;
-      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: center;
       letter-spacing: 0.5px;
-      position: relative;
-      overflow: hidden;
+      background: $color-primary;
+      color: $color-text;
 
-      &::before {
-        content: "";
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        background: $gradient-primary;
-        z-index: -1;
-        opacity: 0;
-        transition: $transition-hover;
+      &:hover {
+        opacity: 0.9;
       }
 
-      &:hover::before {
-        opacity: 0.3;
+      &:active {
+        opacity: 0.8;
       }
 
       @media (max-width: $breakpoint-sm) {
@@ -135,16 +107,5 @@
 
   @media (max-width: $breakpoint-md) {
     padding: calc($spacing-xl * 1.5) 0;
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
